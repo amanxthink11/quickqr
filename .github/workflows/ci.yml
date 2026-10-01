@@ -10,6 +10,12 @@ jobs:
   build-and-test:
     name: Build, Lint & Test
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/quickqr?schema=public"
+      APP_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      NEXT_PUBLIC_APP_URL: "https://quickqr.amanxthink11.com"
+      NEXT_PUBLIC_QR_BASE_URL: "https://quickqr.amanxthink11.com"
+      NODE_ENV: "test"
 
     steps:
       - name: Checkout repository
@@ -42,8 +48,4 @@ jobs:
       - name: Build Next.js Application
         run: npm run build
         env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/quickqr?schema=public"
-          APP_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-          NEXT_PUBLIC_APP_URL: "https://quickqr.amanxthink11.com"
-          NEXT_PUBLIC_QR_BASE_URL: "https://quickqr.amanxthink11.com"
           NODE_ENV: "production"
