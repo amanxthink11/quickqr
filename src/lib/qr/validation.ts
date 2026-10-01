@@ -19,23 +19,82 @@ import {
 } from './types';
 
 /**
- * Validates that a URL uses safe protocols (http, https) and prevents XSS / javascript:
+ * Validates that a hex color string is safe and valid (#RGB, #RRGGBB, #RRGGBBAA, or 'transparent')
+ * Prevents CSS / SVG attribute injection attacks.
+ */
+export function isValidHexColor(color: string): boolean {
+  if (!color || typeof color !== 'string') return false;
+  const trimmed = color.trim().toLowerCase();
+  if (trimmed === 'transparent') return true;
+  return /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/.test(trimmed);
+}
+
+/**
+ * Validates that a URL uses safe protocols (http, https) and prevents XSS,
+ * dangerous URI schemes (javascript:, data:, vbscript:, file:, blob:),
+ * protocol-relative URLs (//), and script/event-handler injection.
  */
 export function isSafeURL(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
-  const trimmed = url.trim().toLowerCase();
+
+  // Block control characters, null bytes, and non-printable characters
+  if (/[\x00-\x1F\x7F]/.test(url)) {
+    return false;
+  }
+
+  const trimmed = url.trim();
+
+  // Strip control characters, spaces, and tabs for protocol inspection
+  const sanitizedProtocolCheck = trimmed.replace(/[\x00-\x1F\x7F\s]/g, '').toLowerCase();
+
+  // Block dangerous URI schemes
   if (
-    trimmed.startsWith('javascript:') ||
-    trimmed.startsWith('vbscript:') ||
-    trimmed.startsWith('data:text/html') ||
-    trimmed.startsWith('data:application') ||
-    trimmed.includes('<script') ||
-    trimmed.includes('onload=') ||
-    trimmed.includes('onerror=')
+    sanitizedProtocolCheck.startsWith('javascript:') ||
+    sanitizedProtocolCheck.startsWith('vbscript:') ||
+    sanitizedProtocolCheck.startsWith('data:') ||
+    sanitizedProtocolCheck.startsWith('file:') ||
+    sanitizedProtocolCheck.startsWith('blob:') ||
+    sanitizedProtocolCheck.startsWith('about:')
   ) {
     return false;
   }
-  return true;
+
+  // Block protocol-relative URLs (e.g. //attacker.com/malicious)
+  if (trimmed.startsWith('//')) {
+    return false;
+  }
+
+  // Block embedded HTML tags or event handler injection
+  const lowerTrimmed = trimmed.toLowerCase();
+  if (
+    lowerTrimmed.includes('<') ||
+    lowerTrimmed.includes('>') ||
+    lowerTrimmed.includes('javascript:') ||
+    lowerTrimmed.includes('vbscript:') ||
+    lowerTrimmed.includes('onload=') ||
+    lowerTrimmed.includes('onerror=') ||
+    lowerTrimmed.includes('onclick=') ||
+    lowerTrimmed.includes('onmouseover=') ||
+    lowerTrimmed.includes('onfocus=') ||
+    lowerTrimmed.includes('eval(')
+  ) {
+    return false;
+  }
+
+  // Validate standard web URL structure
+  try {
+    const parsed = new URL(trimmed.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//) ? trimmed : `https://${trimmed}`);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    // Hostname must be present and not contain suspicious characters
+    if (!parsed.hostname || parsed.hostname.includes(' ')) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -49,11 +108,11 @@ export function isValidUPIVpa(vpa: string): boolean {
 }
 
 /**
- * Validates an email address
+ * Validates an email address format
  */
 export function isValidEmail(email: string): boolean {
   if (!email) return false;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/;
   return emailRegex.test(email.trim());
 }
 
@@ -61,14 +120,16 @@ export function isValidEmail(email: string): boolean {
  * Calculates relative luminance for WCAG contrast calculation
  */
 function getRelativeLuminance(hex: string): number {
+  if (hex === 'transparent') return 1.0;
   let clean = hex.replace('#', '');
-  if (clean.length === 3) {
+  if (clean.length === 3 || clean.length === 4) {
     clean = clean
+      .substring(0, 3)
       .split('')
       .map((c) => c + c)
       .join('');
   }
-  if (clean.length !== 6) return 0.5;
+  if (clean.length < 6) return 0.5;
 
   const r = parseInt(clean.substring(0, 2), 16) / 255;
   const g = parseInt(clean.substring(2, 4), 16) / 255;
@@ -94,6 +155,8 @@ export function getContrastRatio(hex1: string, hex2: string): number {
 
 /**
  * Evaluates the visual scan readability and safety of QR customization settings
+ * Rigorously checks foreground, background, eye finder contrast, logo dimensions,
+ * error correction levels, and data density.
  */
 export function assessQRReadability(
   customization: QRCustomization,
@@ -103,63 +166,95 @@ export function assessQRReadability(
   const suggestions: string[] = [];
   let score = 100;
 
-  // 1. Contrast Check
+  // 1. Contrast Check: Pattern vs Background
   const contrast = getContrastRatio(customization.fgColor, customization.bgColor);
   const lumFg = getRelativeLuminance(customization.fgColor);
   const lumBg = getRelativeLuminance(customization.bgColor);
 
   if (contrast < 3.0) {
     score -= 50;
-    issues.push(`Critical: Contrast ratio is very low (${contrast.toFixed(1)}:1). Scanners will fail to recognize the code.`);
+    issues.push(`Critical: Contrast ratio is very low (${contrast.toFixed(1)}:1). Smartphone cameras will fail to resolve the code.`);
     suggestions.push('Choose a much darker foreground color and a light background color.');
   } else if (contrast < 4.5) {
-    score -= 25;
-    issues.push(`Warning: Moderate contrast ratio (${contrast.toFixed(1)}:1). Scanning in dim lighting might be difficult.`);
+    score -= 20;
+    issues.push(`Warning: Moderate contrast ratio (${contrast.toFixed(1)}:1). Scanning in dim or outdoor lighting may fail.`);
     suggestions.push('Increase the color contrast to at least 4.5:1 for reliable scanning.');
   }
 
-  // 2. Inverted Colors Check (Light on Dark)
-  if (lumFg > lumBg) {
+  // 2. Eye Finder Pattern Contrast Check
+  const effectiveEyeColor = customization.eyeColor || customization.fgColor;
+  const eyeContrast = getContrastRatio(effectiveEyeColor, customization.bgColor);
+
+  if (eyeContrast < 3.0) {
+    score -= 60;
+    issues.push(`Critical: Corner eye finder pattern contrast is very low (${eyeContrast.toFixed(1)}:1). Scanners require high-contrast finder patterns to locate the code.`);
+    suggestions.push('Ensure the eye finder color has high contrast with the background.');
+  } else if (eyeContrast < 4.5) {
     score -= 15;
-    issues.push('Note: Inverted colors (light QR pattern on dark background). Some basic camera apps struggle with inverted QR codes.');
-    suggestions.push('For maximum compatibility on printed materials, keep the foreground darker than the background.');
+    issues.push(`Warning: Corner eye finder contrast is moderate (${eyeContrast.toFixed(1)}:1).`);
+    suggestions.push('Increase finder eye contrast against the background.');
   }
 
-  // 3. Logo & Error Correction Level
+  // 3. Inverted Colors Check (Light on Dark)
+  if (lumFg > lumBg) {
+    score -= 25;
+    issues.push('Warning: Inverted colors (light QR pattern on dark background). Default camera apps on many smartphones will struggle or fail to scan inverted codes.');
+    suggestions.push('For reliable physical printing, keep the foreground pattern darker than the background.');
+  }
+
+  // 4. Logo & Error Correction Level
   if (customization.logoUrl) {
     if (customization.errorCorrectionLevel === 'L') {
-      score -= 30;
-      issues.push('Error correction level "L" (7%) is too low for center logos.');
+      score -= 45;
+      issues.push('Critical: Error correction level "L" (7% recovery) is too low for center logos.');
       suggestions.push('Switch to Error Correction Level "H" (30%) or "Q" (25%) so the QR remains readable with a logo.');
     } else if (customization.errorCorrectionLevel === 'M') {
       score -= 15;
-      issues.push('Error correction level "M" (15%) might be fragile with larger logos.');
+      issues.push('Error correction level "M" (15% recovery) might be fragile with larger logos.');
       suggestions.push('Recommend using Level "H" for maximum recovery capacity.');
     }
 
     if (customization.logoSize > 0.3) {
-      score -= 20;
+      score -= 25;
       issues.push(`Logo size is large (${Math.round(customization.logoSize * 100)}%). This covers critical data cells.`);
       suggestions.push('Reduce logo size to 25% or below to preserve scan safety.');
+    } else if (customization.logoSize > 0.25 && customization.errorCorrectionLevel !== 'H') {
+      score -= 15;
+      issues.push('Logos larger than 25% require Error Correction Level "H".');
+      suggestions.push('Switch Error Correction Level to "H".');
     }
   }
 
-  // 4. Quiet Zone / Margin
+  // 5. Quiet Zone / Margin
   if (customization.margin < 2) {
     score -= 15;
     issues.push('Quiet zone (margin) is less than 2 modules. Scanners need clear space around the QR code.');
     suggestions.push('Set margin to at least 2 or 4 modules, especially when printing on patterned or colored surfaces.');
   }
 
-  // 5. Payload Density
-  if (payloadLength > 500) {
+  // 6. Payload Density
+  if (payloadLength > 800) {
+    score -= 25;
+    issues.push(`Very high data density (${payloadLength} characters). Generates a dense grid that budget camera sensors cannot resolve.`);
+    suggestions.push('Shorten the text or URL, or use a larger print size (minimum 6x6 cm).');
+  } else if (payloadLength > 450) {
     score -= 10;
     issues.push(`High data density (${payloadLength} characters). Results in a very fine, dense grid.`);
     suggestions.push('Ensure a larger print size (minimum 4x4 cm) so budget smartphone cameras can resolve individual dots.');
   }
 
   const finalScore = Math.max(0, Math.min(100, score));
-  const isReadable = finalScore >= 60 && contrast >= 3.0;
+
+  // The QR is deemed readable ONLY if:
+  // - final score >= 60
+  // - pattern contrast >= 3.0
+  // - eye pattern contrast >= 3.0
+  // - if logo is present, error correction must NOT be 'L'
+  const isReadable =
+    finalScore >= 60 &&
+    contrast >= 3.0 &&
+    eyeContrast >= 3.0 &&
+    (!customization.logoUrl || customization.errorCorrectionLevel !== 'L');
 
   return {
     isReadable,
@@ -228,7 +323,7 @@ export function validateQRInput<T extends QRType>(
         return { isValid: false, error: 'Website URL is required.', warnings };
       }
       if (!isSafeURL(val.url)) {
-        return { isValid: false, error: 'Invalid or unsafe URL format provided.', warnings };
+        return { isValid: false, error: 'Invalid or unsafe URL format provided. Only http:// and https:// links are supported.', warnings };
       }
       return { isValid: true, warnings };
     }
@@ -262,14 +357,18 @@ export function validateQRInput<T extends QRType>(
       if (val.email && !isValidEmail(val.email)) {
         warnings.push('Email address format seems irregular. Please verify.');
       }
+      if (val.website && val.website.trim() && !isSafeURL(val.website)) {
+        return { isValid: false, error: 'Unsafe website URL in vCard.', warnings };
+      }
       return { isValid: true, warnings };
     }
 
     case 'phone': {
       const val = input as PhonePayloadInput;
       const clean = (val.phoneNumber || '').replace(/[^\d+]/g, '');
-      if (!clean || clean.length < 3) {
-        return { isValid: false, error: 'Please enter a valid phone number.', warnings };
+      const digitsOnly = clean.replace(/[^\d]/g, '');
+      if (!digitsOnly || digitsOnly.length < 3 || digitsOnly.length > 16) {
+        return { isValid: false, error: 'Please enter a valid phone number (between 3 and 16 digits).', warnings };
       }
       return { isValid: true, warnings };
     }
@@ -301,8 +400,16 @@ export function validateQRInput<T extends QRType>(
       if (!val.queryOrUrl || !val.queryOrUrl.trim()) {
         return { isValid: false, error: 'Please enter a Google Maps link or location address.', warnings };
       }
-      if (!isSafeURL(val.queryOrUrl)) {
-        return { isValid: false, error: 'Unsafe URL format provided.', warnings };
+      const trimmed = val.queryOrUrl.trim();
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        if (!isSafeURL(trimmed)) {
+          return { isValid: false, error: 'Unsafe URL format provided.', warnings };
+        }
+      } else {
+        // Address text query: ensure no script injection
+        if (trimmed.includes('<') || trimmed.includes('>') || trimmed.toLowerCase().includes('javascript:')) {
+          return { isValid: false, error: 'Unsafe characters in address query.', warnings };
+        }
       }
       return { isValid: true, warnings };
     }
@@ -343,4 +450,57 @@ export function validateQRInput<T extends QRType>(
     default:
       return { isValid: true, warnings };
   }
+}
+
+/**
+ * Sanitizes an SVG string by stripping script tags, foreignObject, event handlers, and dangerous attributes.
+ */
+export function sanitizeSvg(svgContent: string): string {
+  if (!svgContent || typeof svgContent !== 'string') return '';
+
+  const clean = svgContent
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, '')
+    .replace(/(?:href|xlink:href)\s*=\s*(?:'javascript:[^']*'|"javascript:[^"]*"|javascript:[^\s>]+)/gi, '');
+
+  if (typeof window !== 'undefined' && typeof DOMParser !== 'undefined') {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(clean, 'image/svg+xml');
+      const parserError = doc.querySelector('parsererror');
+      if (parserError) {
+        return '';
+      }
+
+      const dangerousTags = ['script', 'foreignobject', 'iframe', 'object', 'embed', 'link'];
+      dangerousTags.forEach((tag) => {
+        const els = doc.getElementsByTagName(tag);
+        while (els.length > 0) {
+          els[0].parentNode?.removeChild(els[0]);
+        }
+      });
+
+      const allElements = doc.getElementsByTagName('*');
+      for (let i = 0; i < allElements.length; i++) {
+        const el = allElements[i];
+        const attrs = Array.from(el.attributes);
+        for (const attr of attrs) {
+          if (attr.name.toLowerCase().startsWith('on') || attr.value.toLowerCase().includes('javascript:')) {
+            el.removeAttribute(attr.name);
+          }
+        }
+      }
+
+      const serializer = new XMLSerializer();
+      return serializer.serializeToString(doc.documentElement);
+    } catch {
+      return clean;
+    }
+  }
+
+  return clean;
 }

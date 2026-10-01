@@ -1,0 +1,254 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// ENUMS (Strictly Phase 2A Approved)
+// -------------------------------------------------------------
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum QRType {
+  DYNAMIC_URL
+  STATIC_URL
+  UPI
+  WHATSAPP
+  VCARD
+  WIFI
+  EMAIL
+  TEXT
+}
+
+enum QRStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  EXPIRED
+}
+
+enum DeviceCategory {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
+}
+
+enum WidgetStatus {
+  ACTIVE
+  PAUSED
+}
+
+// -------------------------------------------------------------
+// USER & SESSIONS
+// -------------------------------------------------------------
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String?       // Argon2id hash (nullable for future OAuth)
+  fullName        String
+  avatarUrl       String?
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // Soft delete
+
+  memberships     Membership[]
+  sessions        Session[]
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique // SHA-256 hash of random 32-byte session token
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// -------------------------------------------------------------
+// ORGANIZATION & TENANCY (The Primary Tenant Boundary)
+// -------------------------------------------------------------
+
+model Organization {
+  id           String        @id @default(cuid())
+  name         String        // Store / Business Name
+  slug         String        @unique // URL-friendly handle
+  logoUrl      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?     // Soft delete
+
+  memberships  Membership[]
+  qrCodes      QRCode[]
+  scanEvents   ScanEvent[]
+  widgets      Widget[]
+  apiKeys      ApiKey[]
+
+  @@index([slug])
+  @@index([deletedAt])
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           UserRole     @default(MEMBER)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+// -------------------------------------------------------------
+// QR CODE & DESTINATION PERSISTENCE (Foundation)
+// -------------------------------------------------------------
+
+model QRCode {
+  id             String              @id @default(cuid())
+  organizationId String
+  shortCode      String              @unique // Base62 7-8 char unique key
+  title          String
+  type           QRType              @default(DYNAMIC_URL)
+  status         QRStatus            @default(ACTIVE)
+  styling        Json                // QRCustomization JSON payload
+  expiresAt      DateTime?
+  scanLimit      Int?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?           // Soft delete
+
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  destinations   QRCodeDestination[]
+  scanEvents     ScanEvent[]
+
+  @@index([organizationId, deletedAt])
+  @@index([shortCode])
+  @@index([status])
+}
+
+model QRCodeDestination {
+  id             String    @id @default(cuid())
+  qrCodeId       String
+  destinationUrl String    // Validated HTTPS/HTTP target URL
+  isActive       Boolean   @default(true)
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  createdAt      DateTime  @default(now())
+  deactivatedAt  DateTime?
+
+  qrCode         QRCode    @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, isActive])
+}
+
+// -------------------------------------------------------------
+// SCAN ANALYTICS (Time-Series Events - Privacy Preserving)
+// -------------------------------------------------------------
+
+model ScanEvent {
+  id             String         @id @default(cuid())
+  organizationId String
+  qrCodeId       String
+  scannedAt      DateTime       @default(now())
+
+  // Coarse Client Environment
+  deviceCategory DeviceCategory @default(UNKNOWN)
+  operatingSystem String?
+  browser        String?
+
+  // Coarse Location (Resolved in-memory, raw IP discarded)
+  country        String?        // ISO 3166-1 alpha-2 or country name
+  region         String?        // State/Region
+  city           String?        // City
+
+  // Attribution & Origin
+  referrer       String?        // Clean domain/origin, query stripped
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmTerm        String?
+  utmContent     String?
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  qrCode         QRCode         @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, scannedAt])
+  @@index([qrCodeId, scannedAt])
+  @@index([scannedAt])
+}
+
+// -------------------------------------------------------------
+// REMOTE WEBSITE QR WIDGET PERSISTENCE (Phase 2E)
+// -------------------------------------------------------------
+
+model Widget {
+  id             String       @id @default(cuid())
+  organizationId String
+  publicId       String       @unique // Stable CSPRNG public identifier (e.g. wgt_...)
+  name           String       // Merchant friendly label / title
+  status         WidgetStatus @default(ACTIVE)
+  configuration  Json         // Full widget configuration payload (WidgetConfig)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?    // Soft delete timestamp
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, deletedAt])
+  @@index([publicId])
+  @@index([status])
+  @@index([organizationId, createdAt])
+}
+
+// -------------------------------------------------------------
+// DEVELOPER REST API & API KEYS (Phase 2F)
+// -------------------------------------------------------------
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String       // Developer friendly label, e.g. "Zapier Integration"
+  keyPrefix      String       // Public prefix for fast lookup, e.g. "qk_live_ab12cd34"
+  keyHash        String       @unique // Deterministic SHA-256 hash of the complete raw secret
+  scopes         String[]     @default(["*"]) // Scopes for future fine-grained permissions
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastUsedAt     DateTime?    // Throttled timestamp of last successful API request
+  expiresAt      DateTime?    // Optional expiration date
+  revokedAt      DateTime?    // Timestamp when key was explicitly revoked
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, revokedAt])
+  @@index([keyPrefix])
+  @@index([keyHash])
+}
+

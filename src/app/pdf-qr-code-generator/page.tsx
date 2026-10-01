@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Convert any public PDF document into a scannable QR code. Perfect for product catalogs, brochures, restaurant menus, user manuals, and real estate flyers.',
   alternates: {
-    canonical: 'https://quickqr.in/pdf-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/pdf-qr-code-generator',
   },
   openGraph: {
     title: 'PDF Document QR Code Generator | QuickQR India',
     description:
       'Direct customers straight to your public PDF catalogs, brochures, and specification sheets.',
-    url: 'https://quickqr.in/pdf-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/pdf-qr-code-generator',
   },
 };
 

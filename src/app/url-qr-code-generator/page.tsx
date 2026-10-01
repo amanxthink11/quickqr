@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Convert any website link, online store, or landing page into a custom branded QR code. Free, permanent static codes with vector SVG and 300 DPI PNG download.',
   alternates: {
-    canonical: 'https://quickqr.in/url-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/url-qr-code-generator',
   },
   openGraph: {
     title: 'Website URL QR Code Generator | QuickQR India',
     description:
       'Direct customers straight to your website without middleman redirects or scan limits.',
-    url: 'https://quickqr.in/url-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/url-qr-code-generator',
   },
 };
 

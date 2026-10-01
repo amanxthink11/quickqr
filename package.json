@@ -1,15 +1,26 @@
 {
   "name": "quickqr",
   "version": "1.0.0",
-  "private": true,
+  "description": "Open-source QR infrastructure for businesses — dynamic QR codes, analytics, UPI QR tools, website widgets, and developer APIs.",
+  "license": "MIT",
+  "author": "Aman Singh (https://amanxthink11.com)",
+  "homepage": "https://quickqr.amanxthink11.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amanxthink11/quickqr.git"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build:widget": "node scripts/build-widget.js",
+    "build": "node scripts/build-widget.js && next build && node scripts/copy-standalone-assets.js",
     "start": "next start",
+    "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "test": "vitest run"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
+    "@prisma/client": "^6.19.3",
     "@types/qrcode": "^1.5.6",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.48.0",
@@ -17,7 +28,8 @@
     "qr-code-styling": "^1.9.2",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -26,6 +38,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.1"

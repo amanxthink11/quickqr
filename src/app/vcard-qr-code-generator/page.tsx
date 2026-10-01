@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Generate free vCard 3.0 digital business card QR codes. Share contact details, designation, phone numbers, email, and office address in a single scan. Compatible with iOS and Android.',
   alternates: {
-    canonical: 'https://quickqr.in/vcard-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/vcard-qr-code-generator',
   },
   openGraph: {
     title: 'vCard Digital Business Card QR Generator | QuickQR India',
     description:
       'Save full contact cards directly into phone address books with a single scan.',
-    url: 'https://quickqr.in/vcard-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/vcard-qr-code-generator',
   },
 };
 

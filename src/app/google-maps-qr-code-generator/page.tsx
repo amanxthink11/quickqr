@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Generate free Google Maps QR codes for shops, restaurants, clinics, and offices. Direct customers to your exact store location with turn-by-turn navigation in Google Maps.',
   alternates: {
-    canonical: 'https://quickqr.in/google-maps-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/google-maps-qr-code-generator',
   },
   openGraph: {
     title: 'Google Maps Location QR Code Generator | QuickQR India',
     description:
       'Help customers find your store, clinic, or event venue with turn-by-turn directions.',
-    url: 'https://quickqr.in/google-maps-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/google-maps-qr-code-generator',
   },
 };
 

@@ -5,6 +5,7 @@ import {
   QRCustomization,
   QRReadabilityResult,
   QRValidationResult,
+  QRType,
 } from '@/lib/qr/types';
 import {
   createQRCodeInstance,
@@ -16,7 +17,10 @@ import {
   buildFramedQRSVG,
   triggerFileDownload,
   openPrintDialog,
+  sanitizeFilename,
 } from '@/lib/qr/download';
+import { TableStandPreview } from './TableStandPreview';
+import { UPIStandPreview } from './UPIStandPreview';
 import {
   Printer,
   ShieldCheck,
@@ -34,6 +38,8 @@ interface QRPreviewProps {
   readability: QRReadabilityResult;
   qrTypeTitle: string;
   subtitle?: string;
+  qrType?: QRType;
+  businessName?: string;
 }
 
 export const QRPreview: React.FC<QRPreviewProps> = ({
@@ -43,9 +49,12 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
   readability,
   qrTypeTitle,
   subtitle,
+  qrType = 'upi',
+  businessName,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const qrInstanceRef = useRef<QRCodeStylingInstance | null>(null);
+  const [renderedCanvas, setRenderedCanvas] = useState<HTMLCanvasElement | null>(null);
   const [opticalScanResult, setOpticalScanResult] = useState<QRReadabilityResult | null>(null);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [downloadResolution, setDownloadResolution] = useState<'1000' | '2000' | '3000'>('2000');
@@ -72,10 +81,13 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
           // Find generated canvas and test optical scan
           const canvas = containerRef.current.querySelector('canvas');
           if (canvas) {
-            const scanCheck = verifyOpticalScan(canvas, payload);
-            if (isMounted) {
-              setOpticalScanResult(scanCheck);
-            }
+            setRenderedCanvas(canvas);
+            requestAnimationFrame(() => {
+              if (isMounted) {
+                const scanCheck = verifyOpticalScan(canvas, payload);
+                setOpticalScanResult(scanCheck);
+              }
+            });
           }
         }
       } catch (err) {
@@ -101,7 +113,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
     const targetSize = parseInt(downloadResolution, 10);
     const framedCanvas = await renderFramedQRToCanvas(canvas, customization, targetSize);
     const dataUrl = framedCanvas.toDataURL('image/png', 1.0);
-    const filename = `quickqr-${customization.frameStyle}-${targetSize}px.png`;
+    const filename = sanitizeFilename(`quickqr-${customization.frameStyle}-${targetSize}px.png`);
     triggerFileDownload(dataUrl, filename);
   };
 
@@ -115,7 +127,8 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
         const framedSVG = buildFramedQRSVG(text, customization, 600);
         const blob = new Blob([framedSVG], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        triggerFileDownload(url, `quickqr-${customization.frameStyle}.svg`);
+        const filename = sanitizeFilename(`quickqr-${customization.frameStyle}.svg`);
+        triggerFileDownload(url, filename);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } catch (e) {
@@ -136,6 +149,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
 
   // Determine aggregate scan safety health
   const scanHealth = opticalScanResult || readability;
+  const isOpticalVerified = opticalScanResult?.isReadable === true;
   const isHealthy = validation.isValid && scanHealth.isReadable && readability.score >= 60;
 
   return (
@@ -145,13 +159,13 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-bold text-neutral-900">Live QR Preview</h3>
-            <p className="text-xs text-neutral-500">Real-time scan safety validated</p>
+            <p className="text-xs text-neutral-500">QR readability validated before export</p>
           </div>
           <div className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-lg text-xs">
             <button
               type="button"
               onClick={() => setPreviewMode('standard')}
-              className={`px-2 py-1 rounded-md font-medium transition ${
+              className={`px-2 py-1 rounded-md font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                 previewMode === 'standard'
                   ? 'bg-white text-neutral-900 shadow-xs'
                   : 'text-neutral-600 hover:text-neutral-900'
@@ -162,13 +176,13 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
             <button
               type="button"
               onClick={() => setPreviewMode('stand')}
-              className={`px-2 py-1 rounded-md font-medium transition ${
+              className={`px-2 py-1 rounded-md font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                 previewMode === 'stand'
                   ? 'bg-white text-neutral-900 shadow-xs'
                   : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
-              Table Stand
+              {qrType === 'upi' ? 'UPI Counter Stand' : 'Table Stand'}
             </button>
           </div>
         </div>
@@ -196,13 +210,17 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-emerald-950">100% Scan Verified</span>
+                  <span className="font-bold text-emerald-950">
+                    {isOpticalVerified ? 'QR Readability Validated' : 'Readability Check Passed'}
+                  </span>
                   <span className="px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-950 font-mono text-[10px]">
                     Score: {scanHealth.score}/100
                   </span>
                 </div>
                 <p className="text-emerald-800 text-[11px] mt-0.5">
-                  High contrast & optical readability confirmed with smartphone camera decoder.
+                  {isOpticalVerified
+                    ? 'QR readability validated before export.'
+                    : 'Color contrast and locator geometry meet scan safety guidelines.'}
                 </p>
               </div>
             </>
@@ -210,7 +228,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
             <>
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-amber-950">Attention Required</span>
+                <span className="font-bold text-amber-950">Scan Reliability Warning</span>
                 <ul className="list-disc list-inside mt-0.5 text-[11px] text-amber-800 space-y-0.5">
                   {scanHealth.issues.map((issue, idx) => (
                     <li key={idx}>{issue}</li>
@@ -240,37 +258,26 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
               </p>
             </div>
           ) : previewMode === 'stand' ? (
-            /* Table Stand / Frame Simulation */
-            <div className="w-full max-w-[280px] bg-white rounded-2xl p-4 shadow-xl border-4 border-neutral-200 text-center space-y-3">
-              <div className="font-bold text-xs uppercase tracking-wider text-neutral-800 pb-1 border-b border-neutral-100">
-                {qrTypeTitle}
-              </div>
-              <div
-                className="p-3 rounded-xl mx-auto flex flex-col items-center"
-                style={{
-                  backgroundColor: customization.bgColor,
-                  border:
-                    customization.frameStyle === 'card'
-                      ? `3px solid ${customization.frameColor}`
-                      : 'none',
-                }}
-              >
-                <div ref={containerRef} className="flex justify-center" />
-                {customization.frameStyle !== 'none' && (
-                  <div
-                    className="w-full py-2 px-3 mt-2 rounded-lg font-bold text-xs tracking-wide"
-                    style={{
-                      backgroundColor: customization.frameColor,
-                      color: customization.frameTextColor,
-                    }}
-                  >
-                    {customization.frameText || 'SCAN ME'}
-                  </div>
-                )}
-              </div>
-              <p className="text-[10px] text-neutral-400 font-medium">
-                Acrylic Stand • Table Tent Mockup
-              </p>
+            /* Enhanced Realistic Physical Table Stand / Tent Display */
+            <div className="w-full">
+              {/* Keep hidden QR canvas container mounted so renderedCanvas is always available */}
+              <div ref={containerRef} className="hidden" />
+              {qrType === 'upi' ? (
+                <UPIStandPreview
+                  qrCanvas={renderedCanvas}
+                  customization={customization}
+                  payload={payload}
+                  initialMerchantName={businessName}
+                />
+              ) : (
+                <TableStandPreview
+                  qrCanvas={renderedCanvas}
+                  customization={customization}
+                  qrType={qrType}
+                  qrTypeTitle={qrTypeTitle}
+                  initialBusinessName={businessName}
+                />
+              )}
             </div>
           ) : (
             /* Standard Frame Preview */
@@ -337,11 +344,12 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
         </div>
       </div>
 
-      {/* Bottom Download & Export Controls */}
-      <div className="pt-5 mt-5 border-t border-neutral-200/80 space-y-3">
-        <div className="flex items-center justify-between text-xs">
+      {/* Bottom Download & Export Controls (shown in standard mode; stand mode has its own dedicated print & HD download buttons) */}
+      {previewMode === 'standard' && (
+        <div className="pt-5 mt-5 border-t border-neutral-200/80 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <span className="font-semibold text-neutral-700">Export Resolution:</span>
-          <div className="flex items-center gap-1.5 font-mono">
+          <div className="flex flex-wrap items-center gap-1.5 font-mono">
             {(
               [
                 ['1000', '1000px (Web)'],
@@ -352,8 +360,9 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
               <button
                 key={res}
                 type="button"
+                aria-pressed={downloadResolution === res}
                 onClick={() => setDownloadResolution(res)}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition ${
+                className={`px-2 py-1 rounded text-[11px] font-medium transition focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:outline-none ${
                   downloadResolution === res
                     ? 'bg-neutral-900 text-white'
                     : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
@@ -371,7 +380,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
             type="button"
             onClick={handleDownloadPNG}
             disabled={!validation.isValid}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition shadow-xs"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition shadow-xs focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:outline-none"
           >
             <ImageIcon className="w-4 h-4" />
             <span>Download PNG</span>
@@ -381,7 +390,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
             type="button"
             onClick={handleDownloadSVG}
             disabled={!validation.isValid}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed border border-neutral-300 text-neutral-800 text-xs font-bold transition"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed border border-neutral-300 text-neutral-800 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
           >
             <FileCode className="w-4 h-4" />
             <span>Download SVG</span>
@@ -391,21 +400,22 @@ export const QRPreview: React.FC<QRPreviewProps> = ({
             type="button"
             onClick={handlePrint}
             disabled={!validation.isValid}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-900 border border-indigo-200 text-xs font-bold transition"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-900 border border-indigo-200 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
           >
             <Printer className="w-4 h-4 text-indigo-700" />
             <span>Print Stand (A4)</span>
           </button>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-500 pt-1 gap-1">
           <span className="flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             Direct Vector & Raster Rendering
           </span>
-          <span>Zero Server Storage • Instant 100% Private</span>
+          <span>Zero Server Storage • Client-Side Private</span>
         </div>
       </div>
+      )}
     </div>
   );
 };

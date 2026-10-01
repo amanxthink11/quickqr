@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Generate free WhatsApp click-to-chat QR codes with pre-filled messages. Perfect for Indian businesses, customer support, catalog inquiries, and instant order booking.',
   alternates: {
-    canonical: 'https://quickqr.in/whatsapp-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/whatsapp-qr-code-generator',
   },
   openGraph: {
     title: 'WhatsApp QR Code Generator | QuickQR India',
     description:
       'Turn store footfall and flyer readers into direct WhatsApp conversations with custom pre-filled message presets.',
-    url: 'https://quickqr.in/whatsapp-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/whatsapp-qr-code-generator',
   },
 };
 

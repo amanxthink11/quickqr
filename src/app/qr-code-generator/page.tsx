@@ -6,15 +6,15 @@ import { SEOContentSection } from '@/components/marketing/SEOContentSection';
 export const metadata: Metadata = {
   title: 'Free QR Code Generator — Custom QR Code Maker with Logo',
   description:
-    'Create free, customized QR codes for websites, UPI payments, WhatsApp, Wi-Fi, vCards, Google reviews, and menus. Download vector SVG and high-resolution PNG with 100% scan safety.',
+    'Create free, customized QR codes for websites, UPI payments, WhatsApp, Wi-Fi, vCards, Google reviews, and menus. Download vector SVG and high-resolution PNG with QR readability validated before export.',
   alternates: {
-    canonical: 'https://quickqr.in/qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/qr-code-generator',
   },
   openGraph: {
     title: 'Free All-in-One QR Code Generator | QuickQR India',
     description:
-      'Universal QR code creator with color customization, frames, brand logos, and instant optical scan verification.',
-    url: 'https://quickqr.in/qr-code-generator',
+      'Free QR code creator with color customization, frames, brand logos, and instant QR readability check before export.',
+    url: 'https://quickqr.amanxthink11.com/qr-code-generator',
   },
 };
 

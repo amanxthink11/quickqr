@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Create contactless digital menu QR codes for restaurants, cafes, bars, and food trucks. Direct patrons to your online menu with print-ready acrylic table tent stands.',
   alternates: {
-    canonical: 'https://quickqr.in/menu-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/menu-qr-code-generator',
   },
   openGraph: {
     title: 'Digital Menu QR Code Generator | QuickQR India',
     description:
       'Touchless digital dining menus for Indian restaurants, cafes, and hotels. 300 DPI print-ready table tents.',
-    url: 'https://quickqr.in/menu-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/menu-qr-code-generator',
   },
 };
 

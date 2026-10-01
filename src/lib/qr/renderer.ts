@@ -59,7 +59,7 @@ export async function createQRCodeInstance(
     width: customization.size || 320,
     height: customization.size || 320,
     type: 'canvas',
-    data: payload || 'https://quickqr.in',
+    data: payload || 'https://quickqr.amanxthink11.com',
     margin: (customization.margin ?? 3) * 4,
     qrOptions: {
       typeNumber: 0,
@@ -141,10 +141,11 @@ export function verifyOpticalScan(
   } catch {
     // If canvas cross-origin or buffer read issue
     return {
-      isReadable: true,
-      score: 80,
-      issues: ['Optical scan check skipped due to image source restrictions.'],
-      suggestions: [],
+      isReadable: false,
+      score: 50,
+      issues: ['Optical camera simulation check restricted by browser canvas security. Verify scan with your phone camera before printing.'],
+      suggestions: ['Test scan directly using your phone camera app.'],
     };
   }
 }
+

@@ -11,13 +11,14 @@ import { WhyChooseUs } from '@/components/marketing/WhyChooseUs';
 import { DynamicQRTeaser } from '@/components/marketing/DynamicQRTeaser';
 import { PricingTeaser } from '@/components/marketing/PricingTeaser';
 import { FAQSection } from '@/components/marketing/FAQSection';
+import { WebsiteWidgetHighlightSection } from '@/components/marketing/WebsiteWidgetHighlightSection';
 
 export const metadata: Metadata = {
-  title: 'QuickQR India — Free Production QR Tools for Modern Indian Businesses',
+  title: 'QuickQR — Open-Source QR Infrastructure for Businesses',
   description:
-    'Create, customize and download print-ready QR codes for UPI payments, WhatsApp support, Google 5-star reviews, digital menus, and websites. 100% free with client-side privacy.',
+    'Create, customize and download print-ready QR codes for UPI payments, WhatsApp support, Google customer reviews, digital menus, and dynamic QR analytics with website widgets.',
   alternates: {
-    canonical: 'https://quickqr.in',
+    canonical: 'https://quickqr.amanxthink11.com',
   },
 };
 
@@ -45,6 +46,9 @@ export default function HomePage() {
           <QRGeneratorEngine initialType="upi" allowTypeSwitching={true} />
         </div>
       </section>
+
+      {/* 2.5 Website QR Widget Highlight Feature */}
+      <WebsiteWidgetHighlightSection />
 
       {/* 3. Popular QR Tools */}
       <PopularToolsGrid />

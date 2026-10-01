@@ -17,7 +17,7 @@ const FAQS: FAQItem[] = [
   {
     question: 'Does generating a UPI QR code mean payments are automatically verified?',
     answer:
-      'No. QuickQR is a QR generation engine conforming to NPCI UPI specifications. When a customer scans your UPI QR code, their banking or payment app (Google Pay, PhonePe, Paytm, etc.) prepares a transaction to your bank account. QuickQR does not process payments or verify transaction completion. Always check your bank notification, SMS, or Soundbox before handing over goods.',
+      'No. QuickQR is a payment intent QR generation engine compatible with standard UPI specifications. When a customer scans your UPI QR code, their banking or payment app (Google Pay, PhonePe, Paytm, etc.) prepares a transaction to your bank account. QuickQR does not process payments or verify transaction completion. Always check your bank notification, SMS, or Soundbox before handing over goods.',
   },
   {
     question: 'Can I print these QR codes on physical acrylic stands, banners, and flyers?',

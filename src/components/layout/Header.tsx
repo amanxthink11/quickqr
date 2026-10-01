@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { QrCode, Menu, X, ArrowRight, IndianRupee, MessageSquare, Star, Utensils } from 'lucide-react';
+import { QrCode, Menu, X, ArrowRight, IndianRupee, MessageSquare, Star, Utensils, Sparkles } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,6 +15,7 @@ export const Header: React.FC = () => {
     { label: 'WhatsApp', href: '/whatsapp-qr-code-generator', icon: MessageSquare },
     { label: 'Google Review', href: '/google-review-qr-code-generator', icon: Star },
     { label: 'Digital Menu', href: '/menu-qr-code-generator', icon: Utensils },
+    { label: 'Website Widget', href: '/website-qr-widget', icon: Sparkles },
     { label: 'Pricing', href: '/pricing' },
   ];
 
@@ -62,6 +63,18 @@ export const Header: React.FC = () => {
           {/* Right Action CTA */}
           <div className="hidden sm:flex items-center gap-3">
             <Link
+              href="/dashboard"
+              className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition px-2 py-1"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/login"
+              className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition px-2 py-1"
+            >
+              Sign In
+            </Link>
+            <Link
               href="/qr-code-generator"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition shadow-xs hover:shadow-sm"
             >
@@ -75,8 +88,10 @@ export const Header: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 focus:outline-none"
+              className="p-2 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
               aria-label="Toggle Navigation Menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -86,7 +101,7 @@ export const Header: React.FC = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-neutral-200 bg-white px-4 pt-2 pb-5 space-y-2">
+        <div id="mobile-navigation" className="md:hidden border-b border-neutral-200 bg-white px-4 pt-2 pb-5 space-y-2">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             const Icon = link.icon;
@@ -106,7 +121,21 @@ export const Header: React.FC = () => {
               </Link>
             );
           })}
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-700 text-sm font-bold border border-indigo-200 hover:bg-indigo-100"
+            >
+              <span>Merchant Dashboard</span>
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 text-neutral-800 text-sm font-semibold hover:bg-neutral-50"
+            >
+              <span>Sign In</span>
+            </Link>
             <Link
               href="/qr-code-generator"
               onClick={() => setMobileMenuOpen(false)}

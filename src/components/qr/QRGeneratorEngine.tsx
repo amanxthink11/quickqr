@@ -279,6 +279,16 @@ export const QRGeneratorEngine: React.FC<QRGeneratorEngineProps> = ({
             validation={validation}
             readability={readability}
             qrTypeTitle={typeInfo.title}
+            qrType={selectedType}
+            businessName={
+              selectedType === 'upi'
+                ? inputs.upi.payeeName
+                : selectedType === 'menu'
+                ? inputs.menu.restaurantName
+                : selectedType === 'vcard'
+                ? inputs.vcard.organization || `${inputs.vcard.firstName} ${inputs.vcard.lastName}`.trim()
+                : undefined
+            }
             subtitle={
               selectedType === 'upi'
                 ? inputs.upi.payeeName || 'Scan to Pay via UPI'

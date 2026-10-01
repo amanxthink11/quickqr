@@ -255,7 +255,7 @@ export const QR_TYPE_INFO: Record<
   review: {
     title: 'Google Review QR Code Generator',
     shortTitle: 'Google Review',
-    description: 'Get more 5-star ratings by placing scan-to-review QR stands on store counters.',
+    description: 'Make it easy for patrons to share feedback by placing scan-to-review QR stands on store counters.',
     badge: 'Grow Trust',
     path: '/google-review-qr-code-generator',
     icon: 'Star',

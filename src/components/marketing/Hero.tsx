@@ -25,7 +25,7 @@ export const Hero: React.FC = () => {
 
         {/* Subtitle */}
         <p className="mt-5 text-base sm:text-lg text-neutral-600 max-w-2xl mx-auto leading-relaxed">
-          Generate high-reliability QR codes for UPI payments, WhatsApp support, Google 5-star reviews, digital dining menus, store locations, and websites. Custom branded and 300 DPI print-ready.
+          Generate high-reliability QR codes for UPI payments, WhatsApp support, Google customer reviews, digital dining menus, store locations, and websites. Custom branded and 300 DPI print-ready.
         </p>
 
         {/* CTAs */}
@@ -53,7 +53,7 @@ export const Hero: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-600">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>NPCI UPI Compliant</span>
+            <span>UPI-Compatible Intent</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-600">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />

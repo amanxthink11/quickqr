@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Generate free Wi-Fi QR codes for cafes, hotels, offices, and homes. Let guests connect to your wireless network instantly with one camera scan. Supports WPA/WPA2/WPA3 and hidden networks.',
   alternates: {
-    canonical: 'https://quickqr.in/wifi-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/wifi-qr-code-generator',
   },
   openGraph: {
     title: 'Wi-Fi QR Code Generator | QuickQR India',
     description:
       'Allow customers and office guests to connect to your Wi-Fi network instantly without asking for passwords.',
-    url: 'https://quickqr.in/wifi-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/wifi-qr-code-generator',
   },
 };
 

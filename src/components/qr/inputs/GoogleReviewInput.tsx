@@ -15,7 +15,7 @@ const REVIEW_PRESETS = [
   'Share Your Feedback',
   'Rate Our Service',
   'Scan & Review',
-  'Rate Us 5 Stars ★',
+  'Review Us on Google',
 ];
 
 export const GoogleReviewInput: React.FC<GoogleReviewInputProps> = ({

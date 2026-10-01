@@ -47,7 +47,7 @@ export const PopularToolsGrid: React.FC = () => {
             Popular QR Code Generators for Indian Commerce
           </h2>
           <p className="text-neutral-600 text-sm mt-2">
-            Every business touchpoint covered — from instant UPI counter payments to direct WhatsApp chats and 5-star Google review stands.
+            Every business touchpoint covered — from instant UPI counter payments to direct WhatsApp chats and Google customer review stands.
           </p>
         </div>
 

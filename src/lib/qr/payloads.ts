@@ -17,9 +17,12 @@ import {
 
 /**
  * Escapes special characters for Wi-Fi QR strings (ZXing standard)
+ * Special characters \ ; : , " must be escaped, and newlines must be stripped.
  */
 function escapeWiFiString(str: string): string {
+  if (!str) return '';
   return str
+    .replace(/[\r\n]/g, '')
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/:/g, '\\:')
@@ -28,20 +31,42 @@ function escapeWiFiString(str: string): string {
 }
 
 /**
- * Sanitizes and formats phone numbers by stripping whitespace, dashes, parens
+ * Sanitizes and formats phone numbers by preserving at most one leading '+'
+ * and stripping all non-digit characters.
  */
 export function sanitizePhoneNumber(phone: string): string {
-  return phone.replace(/[^\d+]/g, '');
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  const hasLeadingPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/[^\d]/g, '');
+  if (!digits) return '';
+  return hasLeadingPlus ? `+${digits}` : digits;
 }
 
 /**
- * Generates an NPCI-compliant UPI payment intent URI
+ * Escapes special characters in vCard 3.0 text values according to RFC 2426 section 2.4.2
+ * Backslashes, semicolons, and commas must be escaped with a backslash.
+ * Line breaks must be encoded as literal \n.
+ */
+function escapeVCardValue(str: string): string {
+  if (!str) return '';
+  return str
+    .trim()
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r\n|\r|\n/g, '\\n');
+}
+
+/**
+ * Generates a standard UPI payment intent URI
  * e.g. upi://pay?pa=merchant@upi&pn=Store%20Name&am=150.00&cu=INR&tn=Order%20101
+ * Uses %20 for spaces instead of '+' to ensure maximum compatibility with Indian UPI apps.
  */
 export function buildUPIPayload(input: UPIPayloadInput): string {
-  const vpa = (input.vpa || '').trim();
-  const payeeName = (input.payeeName || '').trim();
-  const currency = (input.currency || 'INR').trim().toUpperCase();
+  const vpa = (input.vpa || '').replace(/[\r\n]/g, '').trim();
+  const payeeName = (input.payeeName || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const currency = (input.currency || 'INR').replace(/[\r\n]/g, '').trim().toUpperCase();
 
   const params = new URLSearchParams();
   params.set('pa', vpa);
@@ -56,28 +81,39 @@ export function buildUPIPayload(input: UPIPayloadInput): string {
   }
 
   if (input.transactionNote && input.transactionNote.trim()) {
-    params.set('tn', input.transactionNote.trim());
+    params.set('tn', input.transactionNote.replace(/[\r\n]/g, ' ').trim());
   }
 
   if (input.transactionRef && input.transactionRef.trim()) {
-    params.set('tr', input.transactionRef.trim());
+    params.set('tr', input.transactionRef.replace(/[\r\n]/g, '').trim());
   }
 
   if (input.merchantCode && input.merchantCode.trim()) {
-    params.set('mc', input.merchantCode.trim());
+    params.set('mc', input.merchantCode.replace(/[\r\n]/g, '').trim());
   }
 
-  return `upi://pay?${params.toString()}`;
+  // UPI applications require RFC 3986 percent encoding (%20) rather than application/x-www-form-urlencoded (+)
+  const queryString = params.toString().replace(/\+/g, '%20');
+  return `upi://pay?${queryString}`;
 }
 
 /**
  * Generates WhatsApp click-to-chat URL
  * e.g. https://wa.me/919876543210?text=Hello%20there
+ * Handles numbers that already include the country code to prevent double-prefixing.
  */
 export function buildWhatsAppPayload(input: WhatsAppPayloadInput): string {
   const cleanCode = (input.countryCode || '').replace(/[^\d]/g, '');
   const cleanNumber = (input.phoneNumber || '').replace(/[^\d]/g, '');
-  const fullPhone = `${cleanCode}${cleanNumber}`;
+
+  let fullPhone = cleanNumber;
+  if (cleanCode) {
+    if (cleanNumber.startsWith(cleanCode) && cleanNumber.length > cleanCode.length + 6) {
+      fullPhone = cleanNumber;
+    } else {
+      fullPhone = `${cleanCode}${cleanNumber}`;
+    }
+  }
 
   let url = `https://wa.me/${fullPhone}`;
   if (input.message && input.message.trim()) {
@@ -87,11 +123,12 @@ export function buildWhatsAppPayload(input: WhatsAppPayloadInput): string {
 }
 
 /**
- * Normalizes and formats URL payload
+ * Normalizes and formats URL payload. Prepends https:// if protocol is missing.
  */
 export function buildURLPayload(input: URLPayloadInput): string {
   let url = (input.url || '').trim();
-  if (url && !url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
+  if (!url) return '';
+  if (!url.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
     url = `https://${url}`;
   }
   return url;
@@ -100,65 +137,75 @@ export function buildURLPayload(input: URLPayloadInput): string {
 /**
  * Generates standard ZXing Wi-Fi payload
  * e.g. WIFI:S:MyNetwork;T:WPA;P:secret123;H:false;;
+ * Omit password field when authType is 'nopass'.
  */
 export function buildWiFiPayload(input: WiFiPayloadInput): string {
   const ssid = escapeWiFiString((input.ssid || '').trim());
   const auth = input.authType || 'WPA';
-  const password = auth === 'nopass' ? '' : escapeWiFiString(input.password || '');
   const hidden = input.hidden ? 'true' : 'false';
 
+  if (auth === 'nopass') {
+    return `WIFI:S:${ssid};T:nopass;H:${hidden};;`;
+  }
+
+  const password = escapeWiFiString(input.password || '');
   return `WIFI:S:${ssid};T:${auth};P:${password};H:${hidden};;`;
 }
 
 /**
- * Generates RFC 6350 / vCard 3.0 standard payload
+ * Generates RFC 2426 / RFC 6350 vCard 3.0 standard payload with escaped special characters
+ * and standard CRLF line breaks.
  */
 export function buildVCardPayload(input: VCardPayloadInput): string {
   const lines: string[] = ['BEGIN:VCARD', 'VERSION:3.0'];
 
   const fn = [input.firstName?.trim(), input.lastName?.trim()].filter(Boolean).join(' ');
-  lines.push(`N:${input.lastName?.trim() || ''};${input.firstName?.trim() || ''};;;`);
-  lines.push(`FN:${fn || 'Contact'}`);
+  const escapedLast = escapeVCardValue(input.lastName || '');
+  const escapedFirst = escapeVCardValue(input.firstName || '');
+  lines.push(`N:${escapedLast};${escapedFirst};;;`);
+  lines.push(`FN:${escapeVCardValue(fn || 'Contact')}`);
 
   if (input.organization?.trim()) {
-    lines.push(`ORG:${input.organization.trim()}`);
+    lines.push(`ORG:${escapeVCardValue(input.organization)}`);
   }
   if (input.title?.trim()) {
-    lines.push(`TITLE:${input.title.trim()}`);
+    lines.push(`TITLE:${escapeVCardValue(input.title)}`);
   }
   if (input.phone?.trim()) {
-    lines.push(`TEL;TYPE=WORK,VOICE:${input.phone.trim()}`);
+    lines.push(`TEL;TYPE=WORK,VOICE:${sanitizePhoneNumber(input.phone)}`);
   }
   if (input.mobile?.trim()) {
-    lines.push(`TEL;TYPE=CELL,VOICE:${input.mobile.trim()}`);
+    lines.push(`TEL;TYPE=CELL,VOICE:${sanitizePhoneNumber(input.mobile)}`);
   }
   if (input.email?.trim()) {
-    lines.push(`EMAIL;TYPE=PREF,INTERNET:${input.email.trim()}`);
+    const cleanEmail = input.email.replace(/[\r\n;]/g, '').trim();
+    lines.push(`EMAIL;TYPE=PREF,INTERNET:${cleanEmail}`);
   }
   if (input.website?.trim()) {
-    let site = input.website.trim();
+    let site = input.website.replace(/[\r\n]/g, '').trim();
     if (!site.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
       site = `https://${site}`;
     }
     lines.push(`URL:${site}`);
   }
 
-  const street = input.street?.trim() || '';
-  const city = input.city?.trim() || '';
-  const state = input.state?.trim() || '';
-  const zip = input.zipCode?.trim() || '';
-  const country = input.country?.trim() || '';
+  const street = escapeVCardValue(input.street || '');
+  const city = escapeVCardValue(input.city || '');
+  const state = escapeVCardValue(input.state || '');
+  const zip = escapeVCardValue(input.zipCode || '');
+  const country = escapeVCardValue(input.country || '');
 
   if (street || city || state || zip || country) {
     lines.push(`ADR;TYPE=WORK:;;${street};${city};${state};${zip};${country}`);
   }
 
   lines.push('END:VCARD');
-  return lines.join('\n');
+  // RFC 2426 specifies CRLF line terminators
+  return lines.join('\r\n');
 }
 
 /**
- * Generates tel: URI
+ * Generates tel: URI with sanitized phone number
  */
 export function buildPhonePayload(input: PhonePayloadInput): string {
   const clean = sanitizePhoneNumber(input.phoneNumber || '');
@@ -166,10 +213,10 @@ export function buildPhonePayload(input: PhonePayloadInput): string {
 }
 
 /**
- * Generates mailto: URI
+ * Generates mailto: URI with percent-encoded query parameters and sanitized recipient
  */
 export function buildEmailPayload(input: EmailPayloadInput): string {
-  const email = (input.email || '').trim();
+  const email = (input.email || '').replace(/[\r\n]/g, '').trim();
   const params = new URLSearchParams();
   if (input.subject?.trim()) {
     params.set('subject', input.subject.trim());
@@ -177,7 +224,8 @@ export function buildEmailPayload(input: EmailPayloadInput): string {
   if (input.body?.trim()) {
     params.set('body', input.body.trim());
   }
-  const query = params.toString();
+  // Use %20 for spaces instead of + for email client compatibility
+  const query = params.toString().replace(/\+/g, '%20');
   return query ? `mailto:${email}?${query}` : `mailto:${email}`;
 }
 
@@ -192,7 +240,8 @@ export function buildTextPayload(input: TextPayloadInput): string {
  * Generates Google Maps search or coordinates link
  */
 export function buildMapsPayload(input: MapsPayloadInput): string {
-  const query = (input.queryOrUrl || '').trim();
+  const query = (input.queryOrUrl || '').replace(/[\r\n]/g, '').trim();
+  if (!query) return '';
   if (query.startsWith('http://') || query.startsWith('https://')) {
     return query;
   }

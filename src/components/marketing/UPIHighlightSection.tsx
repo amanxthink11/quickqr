@@ -15,11 +15,11 @@ export const UPIHighlightSection: React.FC = () => {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Standards-Compliant UPI QR Codes for Direct Bank Settlements
+              UPI-Compatible Payment QR Codes for Direct Bank Payment
             </h2>
 
             <p className="text-neutral-300 text-sm leading-relaxed max-w-xl">
-              QuickQR creates official <code className="bg-neutral-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-xs">upi://pay</code> intent links following NPCI guidelines. Compatible across all major UPI apps in India including Google Pay, PhonePe, Paytm, CRED, Amazon Pay, and BHIM.
+              QuickQR creates <code className="bg-neutral-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-xs">upi://pay</code> payment intent links compatible with Indian UPI apps. Compatible across all major UPI apps in India including Google Pay, PhonePe, Paytm, CRED, Amazon Pay, and BHIM.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -37,7 +37,7 @@ export const UPIHighlightSection: React.FC = () => {
               </div>
               <div className="flex items-start gap-2.5 text-xs text-neutral-300">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>100% direct bank-to-bank settlement</span>
+                <span>Direct customer-to-bank payment intent</span>
               </div>
             </div>
 
@@ -70,7 +70,7 @@ export const UPIHighlightSection: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
                   All UPI Apps Accepted
                 </span>
-                <span className="text-[10px] font-semibold text-neutral-400">NPCI Certified</span>
+                <span className="text-[10px] font-semibold text-neutral-400">UPI Compatible</span>
               </div>
 
               <div className="space-y-1">

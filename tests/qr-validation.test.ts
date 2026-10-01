@@ -3,6 +3,8 @@ import {
   isSafeURL,
   isValidUPIVpa,
   isValidEmail,
+  isValidHexColor,
+  sanitizeSvg,
   getContrastRatio,
   assessQRReadability,
   validateQRInput,
@@ -23,10 +25,52 @@ describe('QR Validation and Security', () => {
       expect(isSafeURL('vbscript:msgbox("test")')).toBe(false);
     });
 
-    it('blocks HTML tags and injection payloads', () => {
+    it('blocks dangerous protocols such as data:, file:, blob:, about:, and protocol-relative', () => {
+      expect(isSafeURL('data:text/html,<script>alert(1)</script>')).toBe(false);
+      expect(isSafeURL('file:///etc/passwd')).toBe(false);
+      expect(isSafeURL('blob:https://example.com/uuid')).toBe(false);
+      expect(isSafeURL('about:blank')).toBe(false);
+      expect(isSafeURL('//attacker.com/malicious')).toBe(false);
+    });
+
+    it('blocks HTML tags and injection payloads in URLs', () => {
       expect(isSafeURL('https://example.com/<script>alert(1)</script>')).toBe(false);
       expect(isSafeURL('https://example.com/" onload="alert(1)')).toBe(false);
-      expect(isSafeURL('data:text/html,<script>alert(1)</script>')).toBe(false);
+      expect(isSafeURL('https://example.com/\x00evil')).toBe(false);
+    });
+  });
+
+  describe('isValidHexColor', () => {
+    it('validates safe hex colors and transparent keyword', () => {
+      expect(isValidHexColor('#fff')).toBe(true);
+      expect(isValidHexColor('#121212')).toBe(true);
+      expect(isValidHexColor('#12345678')).toBe(true);
+      expect(isValidHexColor('transparent')).toBe(true);
+    });
+
+    it('rejects CSS injection attempts and malformed colors', () => {
+      expect(isValidHexColor('red; background: url(x)')).toBe(false);
+      expect(isValidHexColor('#xyz')).toBe(false);
+      expect(isValidHexColor('expression(alert(1))')).toBe(false);
+      expect(isValidHexColor('')).toBe(false);
+    });
+  });
+
+  describe('sanitizeSvg', () => {
+    it('strips script tags and inline handlers from SVGs', () => {
+      const maliciousSvg = `<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><circle cx="50" cy="50" r="40"/><script>evil()</script></svg>`;
+      const cleaned = sanitizeSvg(maliciousSvg);
+      expect(cleaned).not.toContain('<script');
+      expect(cleaned).not.toContain('onload');
+      expect(cleaned).toContain('<circle');
+    });
+
+    it('strips foreignObject and iframe elements from SVGs', () => {
+      const complexSvg = `<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><iframe src="evil.com"></iframe></foreignObject><rect width="10" height="10"/></svg>`;
+      const cleaned = sanitizeSvg(complexSvg);
+      expect(cleaned).not.toContain('<foreignObject');
+      expect(cleaned).not.toContain('<iframe');
+      expect(cleaned).toContain('<rect');
     });
   });
 
@@ -97,6 +141,20 @@ describe('QR Validation and Security', () => {
       );
       expect(result.issues.some((i) => i.includes('too low for center logos'))).toBe(true);
       expect(result.suggestions.some((s) => s.includes('Level "H"'))).toBe(true);
+    });
+
+    it('flags low eye finder pattern contrast against background', () => {
+      const result = assessQRReadability(
+        {
+          ...DEFAULT_CUSTOMIZATION,
+          fgColor: '#000000',
+          bgColor: '#FFFFFF',
+          eyeColor: '#EEEEEE', // Eye color virtually identical to background
+        },
+        50
+      );
+      expect(result.isReadable).toBe(false);
+      expect(result.issues.some((i) => i.includes('Corner eye finder pattern contrast'))).toBe(true);
     });
 
     it('gives high score to high-contrast QR with adequate margin and error correction', () => {

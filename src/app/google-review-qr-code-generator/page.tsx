@@ -6,15 +6,15 @@ import { SEOContentSection } from '@/components/marketing/SEOContentSection';
 export const metadata: Metadata = {
   title: 'Google Review QR Code Generator — Free Scan to Review Maker',
   description:
-    'Generate free Google review QR codes for physical tabletop stands and counter cards. Direct customers straight to your 5-star Google review form. Boost local SEO and reputation.',
+    'Generate free Google review QR codes for physical tabletop stands and counter cards. Collect customer feedback and make it easy for customers to review your business. Boost local visibility and trust.',
   alternates: {
-    canonical: 'https://quickqr.in/google-review-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/google-review-qr-code-generator',
   },
   openGraph: {
     title: 'Google Review QR Code Generator | QuickQR India',
     description:
-      'Capture 5-star customer reviews right at your billing counter with print-ready QR stands.',
-    url: 'https://quickqr.in/google-review-qr-code-generator',
+      'Collect customer feedback and make it easy for customers to review your business with print-ready QR stands.',
+    url: 'https://quickqr.amanxthink11.com/google-review-qr-code-generator',
   },
 };
 
@@ -27,10 +27,10 @@ export default function GoogleReviewQRGeneratorPage() {
             Reputation & Ratings
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-neutral-900 mt-3 tracking-tight">
-            Google Review QR Code Generator — Get 5-Star Reviews
+            Google Review QR Code Generator — Collect Customer Reviews
           </h1>
           <p className="text-sm sm:text-base text-neutral-600 mt-3 leading-relaxed">
-            Generate printable counter stands that direct happy customers straight to your Google Business Profile review screen. Capture positive feedback while the customer is in your store.
+            Generate printable counter stands that direct customers straight to your Google Business Profile review screen. Make it easy for patrons to share feedback and review your business.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function GoogleReviewQRGeneratorPage() {
       <SEOContentSection
         type="review"
         title="Google Review QR Code Generator"
-        introText="A Google Review QR code links directly to your verified Google Business Profile review dialog (typically formatted as https://g.page/r/<id>/review). Rather than forcing customers to manually search for your business name on Google, deal with similar-named competitors, and scroll to find the review tab, scanning this QR takes them straight to the star rating screen with the 5-star rating input opened."
+        introText="A Google Review QR code links directly to your verified Google Business Profile review dialog (typically formatted as https://g.page/r/<id>/review). Rather than forcing customers to manually search for your business name on Google, deal with similar-named competitors, and scroll to find the review tab, scanning this QR takes them straight to your Google review submission screen."
         steps={[
           {
             title: 'Obtain Google Review URL',
@@ -48,7 +48,7 @@ export default function GoogleReviewQRGeneratorPage() {
           },
           {
             title: 'Select Stand Template',
-            description: 'Choose a gold or navy theme, and select banner presets like "RATE US 5 STARS ★" or "SHARE YOUR FEEDBACK".',
+            description: 'Choose a gold or navy theme, and select banner presets like "REVIEW US ON GOOGLE" or "SHARE YOUR FEEDBACK".',
           },
           {
             title: 'Print Table Tent Stands',
@@ -76,7 +76,7 @@ export default function GoogleReviewQRGeneratorPage() {
         faqs={[
           {
             question: 'How does getting more Google reviews help my business?',
-            answer: 'Google\'s local search algorithm strongly prioritizes businesses with a high volume of recent, positive 5-star reviews. It directly improves your ranking in the Google Maps "Local 3-Pack" when nearby customers search for your category.',
+            answer: 'Google\'s local search algorithm considers review recency and authentic customer feedback. Making it easy for genuine patrons to review helps improve your visibility and trust in Google Maps.',
           },
           {
             question: 'Will customers need a Google account to leave a review?',

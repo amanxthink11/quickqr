@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Transparent pricing for Indian businesses. Unlimited forever-free static QR codes with zero expiration. Learn about upcoming Phase 2 dynamic features.',
   alternates: {
-    canonical: 'https://quickqr.in/pricing',
+    canonical: 'https://quickqr.amanxthink11.com/pricing',
   },
   openGraph: {
     title: 'Pricing & Plans | QuickQR India',
     description:
       'Unlimited free static QR generator with vector SVG and 300 DPI PNG exports. No credit card required.',
-    url: 'https://quickqr.in/pricing',
+    url: 'https://quickqr.amanxthink11.com/pricing',
   },
 };
 
@@ -83,6 +83,14 @@ export default function PricingPage() {
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>100% Client-side privacy (passwords & VPAs never stored on server)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Physical Table Stand & Tent generator:</strong> A4, A5, A6 & Counter acrylic display</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Embeddable Website QR Widget:</strong> Floating UPI, WhatsApp & review widget for any site</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0" />

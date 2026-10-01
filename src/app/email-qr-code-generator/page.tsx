@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Create free email QR codes with pre-filled recipient address, subject line, and draft message body. Opens Gmail, Outlook, or Apple Mail instantly upon scan.',
   alternates: {
-    canonical: 'https://quickqr.in/email-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/email-qr-code-generator',
   },
   openGraph: {
     title: 'Email QR Code Generator | QuickQR India',
     description:
       'Pre-populate customer email drafts with target recipient and subject lines in one scan.',
-    url: 'https://quickqr.in/email-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/email-qr-code-generator',
   },
 };
 

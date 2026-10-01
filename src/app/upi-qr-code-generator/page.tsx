@@ -6,15 +6,15 @@ import { SEOContentSection } from '@/components/marketing/SEOContentSection';
 export const metadata: Metadata = {
   title: 'Free UPI QR Code Generator — Create Custom UPI QR',
   description:
-    'Generate free, NPCI-compliant UPI payment QR codes for Indian bank accounts. Supports Google Pay, PhonePe, Paytm, CRED, and BHIM. Download print-ready table stands with zero fees.',
+    'Generate free, UPI-compatible payment QR codes for Indian bank accounts. Supports Google Pay, PhonePe, Paytm, CRED, and BHIM. Download print-ready table stands with zero fees.',
   alternates: {
-    canonical: 'https://quickqr.in/upi-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/upi-qr-code-generator',
   },
   openGraph: {
     title: 'Free UPI QR Code Generator — Create Custom UPI QR | QuickQR India',
     description:
-      'Zero-fee NPCI compliant UPI QR generator. Open amount and fixed amount presets for kirana shops, cafes, and freelancers.',
-    url: 'https://quickqr.in/upi-qr-code-generator',
+      'Zero-fee UPI-compatible payment QR generator. Open amount and fixed amount presets for kirana shops, cafes, and freelancers.',
+    url: 'https://quickqr.amanxthink11.com/upi-qr-code-generator',
   },
 };
 
@@ -25,7 +25,7 @@ export default function UPIQRGeneratorPage() {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-            NPCI Standards Compliant
+            UPI-Compatible Payment QR
           </span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-neutral-900 mt-3 tracking-tight">
             Free UPI QR Code Generator — Create Custom UPI QR
@@ -43,7 +43,7 @@ export default function UPIQRGeneratorPage() {
       <SEOContentSection
         type="upi"
         title="UPI QR Code Generator"
-        introText="A UPI (Unified Payments Interface) QR code encodes a standardized payment intent URI defined by the National Payments Corporation of India (NPCI). When scanned by any UPI-enabled mobile application (such as Google Pay, PhonePe, Paytm, CRED, Amazon Pay, or BHIM), the customer's phone automatically parses your Virtual Payment Address (VPA), registered merchant name, requested amount, and reference note — eliminating manual typing errors."
+        introText="A UPI (Unified Payments Interface) payment QR code encodes a standardized payment intent URI (upi://pay). When scanned by any UPI-enabled mobile application (such as Google Pay, PhonePe, Paytm, CRED, Amazon Pay, or BHIM), the customer's phone automatically parses your Virtual Payment Address (VPA), registered merchant name, requested amount, and reference note — eliminating manual typing errors."
         disclaimer="QuickQR is a static QR generation engine and does not operate as a payment gateway or payment aggregator. Scanning this QR initiates a direct transaction between payer and payee banks. QuickQR does not process payments or guarantee settlement. Always verify payment receipt inside your official banking application or SMS notifications before providing goods or services."
         steps={[
           {
@@ -80,7 +80,7 @@ export default function UPIQRGeneratorPage() {
         faqs={[
           {
             question: 'Are there any transaction fees or commission cuts?',
-            answer: 'No. QuickQR charges zero fees, and peer-to-peer/P2M UPI transactions on standard bank accounts are zero-fee under Indian banking regulations. 100% of the funds go straight into your bank account.',
+            answer: 'No. QuickQR charges zero fees. Peer-to-peer and merchant UPI payments transfer directly between customer and merchant bank accounts with zero platform commission.',
           },
           {
             question: 'How do I know if a customer has actually completed payment?',
@@ -88,7 +88,7 @@ export default function UPIQRGeneratorPage() {
           },
           {
             question: 'Can customers scan this with any UPI application in India?',
-            answer: 'Yes. Our generated payloads conform strictly to the NPCI upi://pay standard format, ensuring full interoperability across Google Pay, PhonePe, Paytm, BHIM, CRED, MobiKwik, and bank apps from SBI, HDFC, ICICI, and Axis.',
+            answer: 'Our generated payloads conform to standard upi://pay payment intent specifications for compatibility across common UPI-enabled apps such as Google Pay, PhonePe, Paytm, BHIM, CRED, and mobile banking applications.',
           },
           {
             question: 'What is the difference between a Dynamic UPI QR and a Static UPI QR?',

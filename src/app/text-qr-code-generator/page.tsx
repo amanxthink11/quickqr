@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Convert raw text, notes, serial keys, inventory batch codes, or instructions into static QR codes. Works offline without internet connection.',
   alternates: {
-    canonical: 'https://quickqr.in/text-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/text-qr-code-generator',
   },
   openGraph: {
     title: 'Plain Text QR Code Generator | QuickQR India',
     description:
       'Encode plain alphanumeric text, serial keys, and notes with real-time character density guidance.',
-    url: 'https://quickqr.in/text-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/text-qr-code-generator',
   },
 };
 

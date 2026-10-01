@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description:
     'Generate free scan-to-call QR codes. When scanned, smartphones immediately open the phone dialer with your business number ready to call. Clean tel: URI standard.',
   alternates: {
-    canonical: 'https://quickqr.in/phone-qr-code-generator',
+    canonical: 'https://quickqr.amanxthink11.com/phone-qr-code-generator',
   },
   openGraph: {
     title: 'Phone Call QR Code Generator | QuickQR India',
     description:
       'Enable customers to call your helpline, desk, or emergency contact with a single scan.',
-    url: 'https://quickqr.in/phone-qr-code-generator',
+    url: 'https://quickqr.amanxthink11.com/phone-qr-code-generator',
   },
 };
 

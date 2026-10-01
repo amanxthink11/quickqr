@@ -29,8 +29,8 @@ const ADVANTAGES = [
   },
   {
     icon: CheckCircle2,
-    title: 'NPCI Standards & Indian Banking Ready',
-    description: 'Tested extensively with Google Pay, PhonePe, Paytm, CRED, BHIM, and Axis/HDFC/ICICI banking apps across iOS and Android.',
+    title: 'UPI Standards Compatible & Banking Ready',
+    description: 'Compatible with standard UPI payment intent across Google Pay, PhonePe, Paytm, CRED, BHIM, and mobile banking apps on iOS and Android.',
   },
 ];
 

@@ -15,11 +15,11 @@ export const GoogleReviewHighlightSection: React.FC = () => {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 leading-tight">
-              Get More 5-Star Google Reviews at the Moment of Delight
+              Collect Customer Feedback and Make It Easy to Review Your Business
             </h2>
 
             <p className="text-neutral-700 text-sm leading-relaxed max-w-xl">
-              Happy customers intend to leave a review, but forget once they walk out your door. Place a physical tabletop QR stand right at your billing counter or restaurant table to capture 5-star ratings instantly while the experience is fresh.
+              Customers appreciate when sharing feedback is simple. Place a tabletop QR stand at your billing counter or restaurant table to make it easy for patrons to leave genuine reviews on Google.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -29,7 +29,7 @@ export const GoogleReviewHighlightSection: React.FC = () => {
               </div>
               <div className="flex items-start gap-2.5 text-xs text-neutral-800">
                 <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>Preset banner text: &ldquo;Rate Us 5 Stars ★&rdquo;</span>
+                <span>Custom banner text: &ldquo;Review Us on Google&rdquo;</span>
               </div>
               <div className="flex items-start gap-2.5 text-xs text-neutral-800">
                 <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
@@ -37,7 +37,7 @@ export const GoogleReviewHighlightSection: React.FC = () => {
               </div>
               <div className="flex items-start gap-2.5 text-xs text-neutral-800">
                 <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>Boosts Google Maps local ranking</span>
+                <span>Helps customers discover and review your business</span>
               </div>
             </div>
 
@@ -61,10 +61,10 @@ export const GoogleReviewHighlightSection: React.FC = () => {
                 ))}
               </div>
               <h3 className="font-extrabold text-base text-neutral-900">
-                Loved Your Experience?
+                We Value Your Feedback
               </h3>
               <p className="text-xs text-neutral-500">
-                Scan with your phone camera to leave a quick 5-star review on Google!
+                Scan with your phone camera to share your honest review on Google.
               </p>
 
               <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200 inline-block">
@@ -74,7 +74,7 @@ export const GoogleReviewHighlightSection: React.FC = () => {
               </div>
 
               <div className="bg-amber-600 text-white font-bold text-xs py-2 px-4 rounded-xl uppercase tracking-wider">
-                ★ Rate Us on Google ★
+                Review Us on Google
               </div>
             </div>
           </div>

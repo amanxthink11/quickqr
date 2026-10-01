@@ -26,9 +26,9 @@ export const Footer: React.FC = () => {
                 <Shield className="w-4 h-4" />
               </div>
               <div>
-                <p className="font-semibold text-white">NPCI & Standards Compliant</p>
+                <p className="font-semibold text-white">UPI & Standards Compatible</p>
                 <p className="text-neutral-400 mt-0.5 leading-relaxed">
-                  Generates official upi:// intent URIs tested on PhonePe, GPay, Paytm & BHIM.
+                  Generates standard upi:// payment intent URIs tested on PhonePe, GPay, Paytm & BHIM.
                 </p>
               </div>
             </div>
@@ -178,16 +178,25 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <span className="text-neutral-500 cursor-not-allowed flex items-center gap-1.5">
-                  Dynamic QRs
-                  <span className="px-1 py-0.2 rounded text-[9px] bg-neutral-800 text-amber-400">Phase 2</span>
-                </span>
+                <Link href="/website-qr-widget" className="text-emerald-400 hover:text-emerald-300 font-medium transition flex items-center gap-1.5">
+                  <span>Website QR Widget</span>
+                  <span className="px-1 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">NEW</span>
+                </Link>
               </li>
               <li>
-                <span className="text-neutral-500 cursor-not-allowed flex items-center gap-1.5">
-                  Scan Analytics
-                  <span className="px-1 py-0.2 rounded text-[9px] bg-neutral-800 text-amber-400">Phase 2</span>
-                </span>
+                <Link href="/dashboard" className="hover:text-white transition flex items-center gap-1.5">
+                  <span>Dynamic QRs</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard" className="hover:text-white transition flex items-center gap-1.5">
+                  <span>Scan Analytics</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/api-keys" className="hover:text-white transition flex items-center gap-1.5">
+                  <span>Developer API</span>
+                </Link>
               </li>
             </ul>
           </div>
@@ -196,16 +205,16 @@ export const Footer: React.FC = () => {
         {/* Legal Disclaimer Box */}
         <div className="mt-10 pt-6 border-t border-neutral-800 text-[11px] text-neutral-400 leading-relaxed space-y-2">
           <p>
-            <strong>Regulatory & Payment Clarification:</strong> QuickQR generates standard-compliant payment intent strings conforming to National Payments Corporation of India (NPCI) unified payment interface specifications. QuickQR does not process payments, verify transactions, hold merchant settlements, or function as a payment aggregator/gateway. Payments are executed directly between payer and payee banks through authorized PSP applications (such as Google Pay, PhonePe, Paytm, BHIM, CRED).
+            <strong>Regulatory & Payment Clarification:</strong> QuickQR generates standard-compliant payment intent strings compatible with unified payment interface (UPI) specifications. QuickQR does not process payments, verify transactions, hold merchant settlements, or function as a payment aggregator/gateway. Payments are executed directly between payer and payee banks through authorized PSP applications (such as Google Pay, PhonePe, Paytm, BHIM, CRED).
           </p>
           <p>
-            All static QR codes generated on this website are rendered client-side directly within your browser. QuickQR does not store, log, or track your customer payment addresses or confidential Wi-Fi passkeys.
+            All static QR codes generated on this website are rendered client-side directly within your browser. QuickQR does not store, log, or track your customer payment addresses or confidential Wi-Fi passkeys. Scan analytics for dynamic QR codes are privacy-minimized without storing raw IP addresses.
           </p>
         </div>
 
         {/* Bottom Copyright */}
         <div className="mt-8 pt-6 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-400 gap-3">
-          <p>© {new Date().getFullYear()} QuickQR India. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} QuickQR — Open-source QR infrastructure. Created by <a href="https://amanxthink11.com" target="_blank" rel="noopener noreferrer" className="text-white hover:underline font-medium">Aman Singh</a>.</p>
           <div className="flex items-center gap-4 text-xs">
             <Link href="/pricing" className="hover:text-white transition">
               Pricing
@@ -213,7 +222,9 @@ export const Footer: React.FC = () => {
             <Link href="/qr-code-generator" className="hover:text-white transition">
               Free Generators
             </Link>
-            <span>v1.0.0 (Phase 1 Production Release)</span>
+            <Link href="/dashboard" className="hover:text-white transition">
+              Dashboard
+            </Link>
           </div>
         </div>
       </div>

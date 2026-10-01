@@ -11,15 +11,21 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://quickqr.in'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://quickqr.amanxthink11.com'),
   title: {
-    default: 'QuickQR India — Free Production QR Tools for Modern Indian Businesses',
-    template: '%s | QuickQR India',
+    default: 'QuickQR — Open-Source QR Infrastructure',
+    template: '%s | QuickQR',
   },
   description:
-    'Generate standards-compliant UPI payment QR codes, WhatsApp click-to-chat QR stands, 5-star Google review signs, digital menus, and Wi-Fi codes. 100% free, client-side private, and 300 DPI print-ready.',
+    'Open-source QR infrastructure for businesses — dynamic QR codes, analytics, UPI QR tools, website widgets, and developer APIs.',
   keywords: [
+    'QuickQR',
+    'Open-source QR',
+    'Dynamic QR code',
+    'QR analytics',
     'UPI QR code generator',
+    'Website QR widget',
+    'Developer QR API',
     'Free QR code generator India',
     'WhatsApp QR code generator',
     'Google review QR code',
@@ -27,24 +33,23 @@ export const metadata: Metadata = {
     'vCard QR code',
     'Wi-Fi QR code generator',
     'Printable QR code table tent',
-    'NPCI UPI payment QR',
   ],
-  authors: [{ name: 'QuickQR India' }],
-  creator: 'QuickQR India',
+  authors: [{ name: 'Aman Singh', url: 'https://amanxthink11.com' }],
+  creator: 'Aman Singh',
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://quickqr.in',
-    siteName: 'QuickQR India',
-    title: 'QuickQR India — Free Production QR Tools for Modern Businesses',
+    url: 'https://quickqr.amanxthink11.com',
+    siteName: 'QuickQR',
+    title: 'QuickQR — Open-Source QR Infrastructure',
     description:
-      'Create, customize and download print-ready QR codes for UPI payments, WhatsApp, Google reviews, and menus.',
+      'Open-source QR infrastructure for businesses — dynamic QR codes, analytics, UPI QR tools, website widgets, and developer APIs.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'QuickQR India — Production QR Platform',
+    title: 'QuickQR — Open-Source QR Infrastructure',
     description:
-      'Zero fee, zero expiration QR codes for Indian retail, cafes, freelancers, and businesses.',
+      'Open-source QR infrastructure for businesses — dynamic QR codes, analytics, UPI QR tools, website widgets, and developer APIs.',
   },
   robots: {
     index: true,
@@ -66,13 +71,13 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              name: 'QuickQR India',
-              url: 'https://quickqr.in',
+              name: 'QuickQR',
+              url: 'https://quickqr.amanxthink11.com',
               description:
-                'Production QR platform for Indian businesses providing free UPI, WhatsApp, review, and menu QR tools.',
+                'Open-source QR infrastructure for businesses — dynamic QR codes, analytics, UPI QR tools, website widgets, and developer APIs.',
               potentialAction: {
                 '@type': 'SearchAction',
-                target: 'https://quickqr.in/qr-code-generator?q={search_term_string}',
+                target: 'https://quickqr.amanxthink11.com/qr-code-generator?q={search_term_string}',
                 'query-input': 'required name=search_term_string',
               },
             }),

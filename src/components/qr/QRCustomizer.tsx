@@ -10,6 +10,7 @@ import {
 } from '@/lib/qr/types';
 import { STYLE_PRESETS } from '@/lib/qr/presets';
 import { LOGO_PRESETS } from '@/lib/qr/logos';
+import { isValidHexColor, sanitizeSvg } from '@/lib/qr/validation';
 import {
   Palette,
   Sparkles,
@@ -71,26 +72,78 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 1. Strict MIME type check
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+    if (!allowedMimeTypes.includes(file.type)) {
+      alert('Invalid file format. Please upload a PNG, JPG, WebP, or SVG image.');
+      return;
+    }
+
+    // 2. Strict file size check (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert('Logo file must be smaller than 2MB.');
       return;
     }
 
+    // 3. For SVG files: parse and sanitize to prevent XSS / script execution
+    if (file.type === 'image/svg+xml') {
+      const textReader = new FileReader();
+      textReader.onload = (uploadEvent) => {
+        const rawSvg = uploadEvent.target?.result as string;
+        const sanitized = sanitizeSvg(rawSvg);
+        if (!sanitized || !sanitized.trim()) {
+          alert('Could not parse SVG. The file appears to be invalid or contains prohibited script tags.');
+          return;
+        }
+
+        const cleanDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(sanitized)}`;
+
+        // Verify that the sanitized SVG can be loaded into an Image
+        const img = new Image();
+        img.onload = () => {
+          const newEC =
+            customization.errorCorrectionLevel === 'L' ||
+            customization.errorCorrectionLevel === 'M'
+              ? 'H'
+              : customization.errorCorrectionLevel;
+
+          onChange({
+            ...customization,
+            logoUrl: cleanDataUrl,
+            errorCorrectionLevel: newEC,
+          });
+        };
+        img.onerror = () => {
+          alert('The uploaded SVG could not be rendered as an image.');
+        };
+        img.src = cleanDataUrl;
+      };
+      textReader.readAsText(file);
+      return;
+    }
+
+    // 4. For raster images (PNG, JPEG, WebP): verify decodability
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
       const dataUrl = uploadEvent.target?.result as string;
-      // When adding a logo, automatically set error correction to high if currently low
-      const newEC =
-        customization.errorCorrectionLevel === 'L' ||
-        customization.errorCorrectionLevel === 'M'
-          ? 'H'
-          : customization.errorCorrectionLevel;
+      const img = new Image();
+      img.onload = () => {
+        const newEC =
+          customization.errorCorrectionLevel === 'L' ||
+          customization.errorCorrectionLevel === 'M'
+            ? 'H'
+            : customization.errorCorrectionLevel;
 
-      onChange({
-        ...customization,
-        logoUrl: dataUrl,
-        errorCorrectionLevel: newEC,
-      });
+        onChange({
+          ...customization,
+          logoUrl: dataUrl,
+          errorCorrectionLevel: newEC,
+        });
+      };
+      img.onerror = () => {
+        alert('The uploaded image file appears to be malformed or corrupted.');
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -104,12 +157,20 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 shadow-xs overflow-hidden">
-      {/* Tab Navigation */}
-      <div className="flex border-b border-neutral-200 bg-neutral-50/60 overflow-x-auto scrollbar-none">
+      {/* Tab Navigation with Accessible ARIA Tabs */}
+      <div
+        role="tablist"
+        aria-label="QR Customization Options"
+        className="flex border-b border-neutral-200 bg-neutral-50/60 overflow-x-auto scrollbar-none"
+      >
         <button
+          id="tab-presets"
+          role="tab"
+          aria-selected={activeTab === 'presets'}
+          aria-controls="tabpanel-presets"
           type="button"
           onClick={() => setActiveTab('presets')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'presets'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -119,9 +180,13 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
           <span>Presets</span>
         </button>
         <button
+          id="tab-colors"
+          role="tab"
+          aria-selected={activeTab === 'colors'}
+          aria-controls="tabpanel-colors"
           type="button"
           onClick={() => setActiveTab('colors')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'colors'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -131,9 +196,13 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
           <span>Colors</span>
         </button>
         <button
+          id="tab-shapes"
+          role="tab"
+          aria-selected={activeTab === 'shapes'}
+          aria-controls="tabpanel-shapes"
           type="button"
           onClick={() => setActiveTab('shapes')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'shapes'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -143,9 +212,13 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
           <span>Shapes & Eyes</span>
         </button>
         <button
+          id="tab-logo"
+          role="tab"
+          aria-selected={activeTab === 'logo'}
+          aria-controls="tabpanel-logo"
           type="button"
           onClick={() => setActiveTab('logo')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'logo'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -158,9 +231,13 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
           )}
         </button>
         <button
+          id="tab-frame"
+          role="tab"
+          aria-selected={activeTab === 'frame'}
+          aria-controls="tabpanel-frame"
           type="button"
           onClick={() => setActiveTab('frame')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'frame'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -170,9 +247,13 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
           <span>Frame & Text</span>
         </button>
         <button
+          id="tab-advanced"
+          role="tab"
+          aria-selected={activeTab === 'advanced'}
+          aria-controls="tabpanel-advanced"
           type="button"
           onClick={() => setActiveTab('advanced')}
-          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+          className={`flex items-center gap-1.5 px-3.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
             activeTab === 'advanced'
               ? 'border-indigo-600 text-indigo-700 bg-white'
               : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -183,7 +264,12 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
         </button>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+        className="p-4 sm:p-5"
+      >
         {/* Tab 1: Presets */}
         {activeTab === 'presets' && (
           <div className="space-y-3">
@@ -196,7 +282,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                   key={preset.id}
                   type="button"
                   onClick={() => handlePresetSelect(preset)}
-                  className="flex flex-col items-center p-3 rounded-xl border border-neutral-200 hover:border-indigo-500 hover:bg-neutral-50 transition text-center group"
+                  className="flex flex-col items-center p-3 rounded-xl border border-neutral-200 hover:border-indigo-500 hover:bg-neutral-50 transition text-center group focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
                 >
                   <div
                     className="w-8 h-8 rounded-lg mb-2 shadow-xs border border-neutral-200 flex items-center justify-center font-bold text-xs"
@@ -223,26 +309,34 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
               <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                 QR Pattern Color (Foreground)
               </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={customization.fgColor}
-                  onChange={(e) => updateField('fgColor', e.target.value)}
-                  className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
-                />
-                <input
-                  type="text"
-                  value={customization.fgColor}
-                  onChange={(e) => updateField('fgColor', e.target.value)}
-                  className="w-28 px-3 py-1.5 text-xs font-mono border border-neutral-300 rounded-lg"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Pick foreground color"
+                    value={isValidHexColor(customization.fgColor) ? customization.fgColor : '#000000'}
+                    onChange={(e) => updateField('fgColor', e.target.value)}
+                    className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
+                  />
+                  <input
+                    type="text"
+                    aria-label="Foreground hex color"
+                    value={customization.fgColor}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      if (val.length <= 9) updateField('fgColor', val);
+                    }}
+                    className="w-24 px-2.5 py-1.5 text-xs font-mono border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {COLOR_SWATCHES.map((hex) => (
                     <button
                       key={hex}
                       type="button"
+                      aria-label={`Select foreground color ${hex}`}
                       onClick={() => updateField('fgColor', hex)}
-                      className="w-6 h-6 rounded-md border border-neutral-300 transition-transform hover:scale-110"
+                      className="w-6 h-6 rounded-md border border-neutral-300 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
                       style={{ backgroundColor: hex }}
                       title={hex}
                     />
@@ -255,26 +349,34 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
               <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                 Background Color
               </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={customization.bgColor}
-                  onChange={(e) => updateField('bgColor', e.target.value)}
-                  className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
-                />
-                <input
-                  type="text"
-                  value={customization.bgColor}
-                  onChange={(e) => updateField('bgColor', e.target.value)}
-                  className="w-28 px-3 py-1.5 text-xs font-mono border border-neutral-300 rounded-lg"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Pick background color"
+                    value={isValidHexColor(customization.bgColor) ? customization.bgColor : '#FFFFFF'}
+                    onChange={(e) => updateField('bgColor', e.target.value)}
+                    className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
+                  />
+                  <input
+                    type="text"
+                    aria-label="Background hex color"
+                    value={customization.bgColor}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      if (val.length <= 9) updateField('bgColor', val);
+                    }}
+                    className="w-24 px-2.5 py-1.5 text-xs font-mono border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {BG_SWATCHES.map((hex) => (
                     <button
                       key={hex}
                       type="button"
+                      aria-label={`Select background color ${hex}`}
                       onClick={() => updateField('bgColor', hex)}
-                      className="w-6 h-6 rounded-md border border-neutral-300 transition-transform hover:scale-110"
+                      className="w-6 h-6 rounded-md border border-neutral-300 transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
                       style={{ backgroundColor: hex }}
                       title={hex}
                     />
@@ -285,19 +387,37 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                Corner Eye Color
+                Corner Eye Color (Optional)
               </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={customization.eyeColor || customization.fgColor}
-                  onChange={(e) => updateField('eyeColor', e.target.value)}
-                  className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Pick eye finder color"
+                    value={
+                      isValidHexColor(customization.eyeColor || customization.fgColor)
+                        ? customization.eyeColor || customization.fgColor
+                        : '#000000'
+                    }
+                    onChange={(e) => updateField('eyeColor', e.target.value)}
+                    className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-300 p-0.5"
+                  />
+                  <input
+                    type="text"
+                    aria-label="Eye hex color"
+                    value={customization.eyeColor || ''}
+                    placeholder="Match pattern"
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      if (val.length <= 9) updateField('eyeColor', val);
+                    }}
+                    className="w-24 px-2.5 py-1.5 text-xs font-mono border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
                 <button
                   type="button"
-                  onClick={() => updateField('eyeColor', customization.fgColor)}
-                  className="text-xs text-neutral-500 hover:text-neutral-800 underline"
+                  onClick={() => updateField('eyeColor', undefined)}
+                  className="text-xs text-neutral-500 hover:text-neutral-800 underline focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
                 >
                   Match Pattern Color
                 </button>
@@ -327,7 +447,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                     key={styleKey}
                     type="button"
                     onClick={() => updateField('dotStyle', styleKey)}
-                    className={`p-2.5 rounded-xl border text-xs font-medium transition ${
+                    className={`p-2.5 rounded-xl border text-xs font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                       customization.dotStyle === styleKey
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-bold'
                         : 'border-neutral-200 hover:bg-neutral-50 text-neutral-700'
@@ -355,7 +475,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                     key={eyeKey}
                     type="button"
                     onClick={() => updateField('eyeStyle', eyeKey)}
-                    className={`p-2.5 rounded-xl border text-xs font-medium transition ${
+                    className={`p-2.5 rounded-xl border text-xs font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                       customization.eyeStyle === eyeKey
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-bold'
                         : 'border-neutral-200 hover:bg-neutral-50 text-neutral-700'
@@ -381,7 +501,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                   <button
                     type="button"
                     onClick={() => updateField('logoUrl', undefined)}
-                    className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-medium"
+                    className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-medium focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:outline-none"
                   >
                     <X className="w-3.5 h-3.5" />
                     Remove Logo
@@ -407,7 +527,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                         errorCorrectionLevel: newEC,
                       });
                     }}
-                    className={`flex flex-col items-center p-2 rounded-xl border transition ${
+                    className={`flex flex-col items-center p-2 rounded-xl border transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                       customization.logoUrl === logo.dataUrl
                         ? 'border-indigo-600 bg-indigo-50/70 font-semibold'
                         : 'border-neutral-200 hover:bg-neutral-50 text-neutral-700'
@@ -420,14 +540,14 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                 ))}
               </div>
 
-              {/* Custom Logo Upload */}
+              {/* Custom Logo Upload with Security Sanitization */}
               <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-neutral-300 hover:border-indigo-500 rounded-xl cursor-pointer bg-neutral-50/50 hover:bg-neutral-50 transition">
                 <Upload className="w-5 h-5 text-neutral-400 mb-1" />
                 <span className="text-xs font-medium text-neutral-700">Upload Custom Business Logo</span>
-                <span className="text-[10px] text-neutral-500">PNG, SVG, or JPG (max 2MB)</span>
+                <span className="text-[10px] text-neutral-500">PNG, JPG, WebP, or SVG (max 2MB, validated)</span>
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -437,13 +557,17 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
             {customization.logoUrl && (
               <div className="space-y-3 pt-2 border-t border-neutral-100">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-medium text-neutral-700">Logo Size Proportion</span>
+                  <label htmlFor="logo-size-range" className="font-medium text-neutral-700">
+                    Logo Size Proportion
+                  </label>
                   <span className="font-mono text-neutral-500">
                     {Math.round(customization.logoSize * 100)}%
                   </span>
                 </div>
                 <input
+                  id="logo-size-range"
                   type="range"
+                  aria-label="Logo size proportion range"
                   min="0.15"
                   max="0.30"
                   step="0.01"
@@ -480,7 +604,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                     key={styleKey}
                     type="button"
                     onClick={() => updateField('frameStyle', styleKey)}
-                    className={`p-2.5 rounded-xl border text-xs font-medium transition ${
+                    className={`p-2.5 rounded-xl border text-xs font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                       customization.frameStyle === styleKey
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-950 font-bold'
                         : 'border-neutral-200 hover:bg-neutral-50 text-neutral-700'
@@ -501,6 +625,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                   <input
                     id="frame-text"
                     type="text"
+                    aria-label="Frame call to action text"
                     value={customization.frameText}
                     onChange={(e) => updateField('frameText', e.target.value)}
                     placeholder="e.g. SCAN & PAY WITH ANY UPI APP"
@@ -510,13 +635,15 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
+                    <label htmlFor="frame-color-input" className="block text-xs font-medium text-neutral-700 mb-1">
                       Frame Color
                     </label>
                     <div className="flex items-center gap-2">
                       <input
+                        id="frame-color-input"
                         type="color"
-                        value={customization.frameColor}
+                        aria-label="Pick frame color"
+                        value={isValidHexColor(customization.frameColor) ? customization.frameColor : '#1E293B'}
                         onChange={(e) => updateField('frameColor', e.target.value)}
                         className="w-8 h-8 rounded cursor-pointer border border-neutral-300 p-0.5"
                       />
@@ -524,13 +651,15 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">
+                    <label htmlFor="frame-text-color-input" className="block text-xs font-medium text-neutral-700 mb-1">
                       Text Color
                     </label>
                     <div className="flex items-center gap-2">
                       <input
+                        id="frame-text-color-input"
                         type="color"
-                        value={customization.frameTextColor}
+                        aria-label="Pick frame text color"
+                        value={isValidHexColor(customization.frameTextColor) ? customization.frameTextColor : '#FFFFFF'}
                         onChange={(e) => updateField('frameTextColor', e.target.value)}
                         className="w-8 h-8 rounded cursor-pointer border border-neutral-300 p-0.5"
                       />
@@ -564,7 +693,7 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
                     key={level}
                     type="button"
                     onClick={() => updateField('errorCorrectionLevel', level)}
-                    className={`py-2 rounded-lg border text-xs font-semibold transition ${
+                    className={`py-2 rounded-lg border text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none ${
                       customization.errorCorrectionLevel === level
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-600'
                         : 'border-neutral-200 hover:bg-neutral-50 text-neutral-700'
@@ -578,13 +707,15 @@ export const QRCustomizer: React.FC<QRCustomizerProps> = ({
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                <label htmlFor="margin-range" className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                   Quiet Zone (Margin)
                 </label>
                 <span className="text-xs font-mono text-neutral-600">{customization.margin} modules</span>
               </div>
               <input
+                id="margin-range"
                 type="range"
+                aria-label="Quiet zone margin in modules"
                 min="1"
                 max="6"
                 step="1"
