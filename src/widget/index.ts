@@ -5,6 +5,11 @@ import {
   sanitizeWidgetConfig,
   decodeWidgetConfig,
 } from '../lib/widget/config';
+import {
+  getWidgetClickBehavior,
+  resolveWidgetDestination,
+  safeNavigate,
+} from '../lib/widget/navigation';
 
 // Icons as clean, safe inline SVGs (no external network requests or font dependencies)
 const ICONS: Record<string, string> = {
@@ -20,6 +25,7 @@ interface WidgetInstance {
   open: () => void;
   close: () => void;
   destroy: () => void;
+  handleClick: () => void;
   updateConfig: (newConfig: Partial<WidgetConfig>) => void;
 }
 
@@ -33,7 +39,7 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
 
   constructor(targetContainer?: HTMLElement, customConfig?: Partial<WidgetConfig>) {
     const initialConfig = customConfig
-      ? { ...getDefaultWidgetConfig('upi'), ...customConfig }
+      ? { ...getDefaultWidgetConfig(customConfig.type || 'upi'), ...customConfig }
       : this.extractConfigFromDOM();
 
     this.config = sanitizeWidgetConfig(initialConfig);
@@ -76,6 +82,19 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
     const type = (currentScript.getAttribute('data-type') || 'upi') as WidgetType;
     const defaults = getDefaultWidgetConfig(type);
 
+    const clickBehaviorAttr =
+      currentScript.getAttribute('data-behavior') ||
+      currentScript.getAttribute('data-click-behavior');
+    const clickBehavior = (clickBehaviorAttr as WidgetConfig['clickBehavior']) || defaults.clickBehavior;
+
+    const targetAttr = currentScript.getAttribute('data-target') as WidgetConfig['target'];
+    const newTabAttr = currentScript.getAttribute('data-new-tab');
+    const openInNewTab = newTabAttr !== null ? newTabAttr !== 'false' : defaults.openInNewTab;
+    const target = targetAttr || (openInNewTab === false ? '_self' : defaults.target || '_blank');
+
+    const showQrAttr = currentScript.getAttribute('data-show-qr') || currentScript.getAttribute('data-qr');
+    const showQrModal = showQrAttr !== null ? showQrAttr === 'true' : defaults.showQrModal;
+
     return {
       type,
       payload: currentScript.getAttribute('data-payload') || defaults.payload,
@@ -91,6 +110,10 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
       popupDescription: currentScript.getAttribute('data-desc') || defaults.popupDescription,
       ctaText: currentScript.getAttribute('data-cta') || defaults.ctaText,
       mobileBehavior: (currentScript.getAttribute('data-mobile') as WidgetConfig['mobileBehavior']) || defaults.mobileBehavior,
+      clickBehavior,
+      openInNewTab,
+      target,
+      showQrModal,
     };
   }
 
@@ -160,6 +183,7 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
         transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
+        text-decoration: none;
       }
       .widget-launcher:hover {
         transform: translateY(-2px) scale(1.02);
@@ -354,13 +378,42 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
     styleEl.textContent = this.getShadowStyles();
     this.shadow.appendChild(styleEl);
 
-    // Launcher button
-    const launcher = document.createElement('button');
-    launcher.type = 'button';
-    launcher.className = 'widget-launcher';
-    launcher.setAttribute('aria-haspopup', 'dialog');
-    launcher.setAttribute('aria-expanded', 'false');
-    launcher.setAttribute('aria-label', this.config.buttonLabel);
+    // Determine click behavior and resolve destination
+    const behavior = getWidgetClickBehavior(this.config);
+    const { url, target, isSafe } = resolveWidgetDestination(this.config);
+
+    // Launcher element (anchor for direct safe navigation, button for modal dialog)
+    let launcher: HTMLElement;
+    if (behavior === 'direct' && isSafe && url) {
+      const linkLauncher = document.createElement('a');
+      linkLauncher.className = 'widget-launcher';
+      linkLauncher.href = url;
+      linkLauncher.target = target;
+      if (target === '_blank') {
+        linkLauncher.rel = 'noopener noreferrer';
+      }
+      linkLauncher.setAttribute('aria-label', this.config.buttonLabel);
+      linkLauncher.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        this.handleClick();
+      });
+      launcher = linkLauncher;
+    } else {
+      const btnLauncher = document.createElement('button');
+      btnLauncher.type = 'button';
+      btnLauncher.className = 'widget-launcher';
+      if (behavior === 'modal') {
+        btnLauncher.setAttribute('aria-haspopup', 'dialog');
+        btnLauncher.setAttribute('aria-expanded', 'false');
+      }
+      btnLauncher.setAttribute('aria-label', this.config.buttonLabel);
+      btnLauncher.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.handleClick();
+      });
+      launcher = btnLauncher;
+    }
 
     const iconSpan = document.createElement('span');
     iconSpan.className = 'widget-launcher-icon';
@@ -371,7 +424,6 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
     textSpan.textContent = this.config.buttonLabel;
     launcher.appendChild(textSpan);
 
-    launcher.addEventListener('click', () => this.open());
     this.shadow.appendChild(launcher);
 
     // Backdrop
@@ -488,13 +540,30 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
     this.shadow.appendChild(backdrop);
   }
 
+  public handleClick(): void {
+    const behavior = getWidgetClickBehavior(this.config);
+    if (behavior === 'direct') {
+      const { url, target, isSafe } = resolveWidgetDestination(this.config);
+      if (isSafe && url) {
+        safeNavigate(url, target);
+        return;
+      }
+      console.warn('[QuickQR Widget] Direct navigation aborted: destination is missing or unsafe.');
+      return;
+    }
+
+    this.open();
+  }
+
   public open(): void {
     if (this.isOpen) return;
     this.isOpen = true;
     this.previouslyFocusedElement = document.activeElement as HTMLElement | null;
 
     const launcher = this.shadow.querySelector('.widget-launcher') as HTMLElement | null;
-    if (launcher) launcher.setAttribute('aria-expanded', 'true');
+    if (launcher && launcher.hasAttribute('aria-expanded')) {
+      launcher.setAttribute('aria-expanded', 'true');
+    }
 
     const backdrop = this.shadow.querySelector('.widget-backdrop') as HTMLElement | null;
     if (backdrop) {
@@ -519,7 +588,9 @@ export class QuickQRWebsiteWidget implements WidgetInstance {
     this.isOpen = false;
 
     const launcher = this.shadow.querySelector('.widget-launcher') as HTMLElement | null;
-    if (launcher) launcher.setAttribute('aria-expanded', 'false');
+    if (launcher && launcher.hasAttribute('aria-expanded')) {
+      launcher.setAttribute('aria-expanded', 'false');
+    }
 
     const backdrop = this.shadow.querySelector('.widget-backdrop') as HTMLElement | null;
     if (backdrop) {
@@ -560,27 +631,29 @@ declare global {
   }
 }
 
-window.QuickQRWidget = {
-  init: (targetContainer?: HTMLElement, customConfig?: Partial<WidgetConfig>) => {
-    const instance = new QuickQRWebsiteWidget(targetContainer, customConfig);
-    window.QuickQRWidget!.instance = instance;
-    return instance;
-  },
-  loadRemote: async (publicId: string, host = '', targetContainer?: HTMLElement) => {
-    try {
-      const endpoint = `${host}/api/widget/${encodeURIComponent(publicId.trim())}`;
-      const res = await fetch(endpoint, { headers: { Accept: 'application/json' } });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data && data.success && data.status === 'ACTIVE' && data.config) {
-        return window.QuickQRWidget!.init(targetContainer, data.config);
+if (typeof window !== 'undefined') {
+  window.QuickQRWidget = {
+    init: (targetContainer?: HTMLElement, customConfig?: Partial<WidgetConfig>) => {
+      const instance = new QuickQRWebsiteWidget(targetContainer, customConfig);
+      window.QuickQRWidget!.instance = instance;
+      return instance;
+    },
+    loadRemote: async (publicId: string, host = '', targetContainer?: HTMLElement) => {
+      try {
+        const endpoint = `${host}/api/widget/${encodeURIComponent(publicId.trim())}`;
+        const res = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && data.success && data.status === 'ACTIVE' && data.config) {
+          return window.QuickQRWidget!.init(targetContainer, data.config);
+        }
+        return null;
+      } catch {
+        return null;
       }
-      return null;
-    } catch {
-      return null;
-    }
-  },
-};
+    },
+  };
+}
 
 /**
  * Auto-initialization function for standard script tags.

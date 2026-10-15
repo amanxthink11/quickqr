@@ -55,6 +55,7 @@ export interface PublicWidgetPayload {
 /**
  * Validates payload destination if it represents an HTTP/HTTPS URL.
  * Strictly blocks localhost, loopback, RFC 1918 private IPs, and cloud metadata.
+ * Validates appropriate schemes per widget purpose.
  */
 function validatePayloadDestination(config: Partial<WidgetConfig>): void {
   const rawPayload = config.payload?.trim() || '';
@@ -62,15 +63,7 @@ function validatePayloadDestination(config: Partial<WidgetConfig>): void {
 
   const lower = rawPayload.toLowerCase();
 
-  // If payload begins with http:// or https://, run strict anti-SSRF validation
-  if (lower.startsWith('http://') || lower.startsWith('https://')) {
-    const urlCheck = validateDestinationUrl(rawPayload);
-    if (!urlCheck.isValid) {
-      throw new Error(`Invalid destination URL: ${urlCheck.error || 'Destination not allowed'}`);
-    }
-  }
-
-  // Reject dangerous non-HTTP protocols
+  // Reject dangerous non-HTTP protocols unconditionally
   if (
     lower.startsWith('javascript:') ||
     lower.startsWith('data:') ||
@@ -80,6 +73,39 @@ function validatePayloadDestination(config: Partial<WidgetConfig>): void {
     lower.startsWith('about:')
   ) {
     throw new Error('Dangerous protocol blocked in widget payload');
+  }
+
+  // If payload begins with http:// or https://, run strict anti-SSRF validation
+  if (lower.startsWith('http://') || lower.startsWith('https://')) {
+    const urlCheck = validateDestinationUrl(rawPayload);
+    if (!urlCheck.isValid) {
+      throw new Error(`Invalid destination URL: ${urlCheck.error || 'Destination not allowed'}`);
+    }
+  }
+
+  const type = config.type || 'upi';
+
+  // Enforce appropriate destination schemes per widget purpose
+  if (type === 'website' || type === 'review' || type === 'menu') {
+    if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
+      if (lower.includes('.') && !lower.includes(':')) {
+        const urlCheck = validateDestinationUrl(`https://${rawPayload}`);
+        if (!urlCheck.isValid) {
+          throw new Error(`Invalid destination URL: ${urlCheck.error || 'Destination not allowed'}`);
+        }
+      } else {
+        throw new Error(`Invalid scheme for ${type} widget. Only HTTP and HTTPS destinations are permitted.`);
+      }
+    }
+  } else if (type === 'whatsapp') {
+    const isWaAllowed =
+      lower.startsWith('https://') ||
+      lower.startsWith('http://') ||
+      lower.startsWith('whatsapp://') ||
+      /^\+?[\d\s-]{7,20}$/.test(rawPayload);
+    if (!isWaAllowed) {
+      throw new Error('Invalid WhatsApp destination. Must be a valid WhatsApp link, deep link, or phone number.');
+    }
   }
 }
 

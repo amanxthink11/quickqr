@@ -124,6 +124,10 @@ export const WidgetForm: React.FC<WidgetFormProps> = ({
       modalDescription: defaults.popupDescription,
       ctaText: defaults.ctaText,
       helperText: defaults.ctaText,
+      clickBehavior: defaults.clickBehavior,
+      openInNewTab: defaults.openInNewTab,
+      target: defaults.target,
+      showQrModal: defaults.showQrModal,
     }));
   };
 
@@ -317,6 +321,84 @@ export const WidgetForm: React.FC<WidgetFormProps> = ({
                     Validated against dangerous scripts and anti-SSRF policies.
                   </p>
                 </div>
+
+                {/* WhatsApp Direct Chat Banner */}
+                {config.type === 'whatsapp' && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+                    <span className="font-bold">⚡ 1-Click Direct Chat:</span> Clicking the floating WhatsApp button launches the WhatsApp conversation immediately without requiring visitors to scan a QR code.
+                  </div>
+                )}
+
+                {/* Website Link Navigation Target */}
+                {config.type === 'website' && (
+                  <div className="space-y-2">
+                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800">
+                      <span className="font-bold">⚡ 1-Click Direct Link:</span> Clicking the floating widget navigates visitors straight to your configured URL without a QR modal.
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-800 mb-1">
+                        Link Navigation Target
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl text-xs font-medium">
+                        <button
+                          type="button"
+                          onClick={() => setConfig({ ...config, openInNewTab: true, target: '_blank' })}
+                          className={`py-1.5 rounded-lg transition text-center ${
+                            config.target !== '_self' && config.openInNewTab !== false
+                              ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                              : 'text-neutral-500 hover:text-neutral-900'
+                          }`}
+                        >
+                          New Tab (_blank)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfig({ ...config, openInNewTab: false, target: '_self' })}
+                          className={`py-1.5 rounded-lg transition text-center ${
+                            config.target === '_self' || config.openInNewTab === false
+                              ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                              : 'text-neutral-500 hover:text-neutral-900'
+                          }`}
+                        >
+                          Same Tab (_self)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Google Review & Menu Action Behavior */}
+                {(config.type === 'review' || config.type === 'menu') && (
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-800 mb-1">
+                      Action Behavior
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl text-xs font-medium">
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, clickBehavior: 'direct', showQrModal: false })}
+                        className={`py-1.5 rounded-lg transition text-center ${
+                          config.clickBehavior !== 'modal' && config.clickBehavior !== 'qr' && !config.showQrModal
+                            ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                            : 'text-neutral-500 hover:text-neutral-900'
+                        }`}
+                      >
+                        Direct Link (Default)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfig({ ...config, clickBehavior: 'modal', showQrModal: true })}
+                        className={`py-1.5 rounded-lg transition text-center ${
+                          config.clickBehavior === 'modal' || config.clickBehavior === 'qr' || config.showQrModal
+                            ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                            : 'text-neutral-500 hover:text-neutral-900'
+                        }`}
+                      >
+                        Scannable QR Modal
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-800 mb-1">

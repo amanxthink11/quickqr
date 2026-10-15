@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import QRCode from 'qrcode';
 import {
   QrCode,
@@ -25,6 +25,11 @@ import {
   getDefaultWidgetConfig,
   generateEmbedCode,
 } from '@/lib/widget/config';
+import {
+  getWidgetClickBehavior,
+  resolveWidgetDestination,
+  safeNavigate,
+} from '@/lib/widget/navigation';
 
 interface PurposeOption {
   type: WidgetType;
@@ -40,15 +45,15 @@ const PURPOSES: PurposeOption[] = [
     type: 'upi',
     label: 'UPI / Payment',
     badge: 'Popular in India',
-    description: 'Instant zero-fee payments via GPay, PhonePe, Paytm, CRED & BHIM',
+    description: 'Instant zero-fee payments via scannable UPI QR modal',
     icon: IndianRupee,
     defaultColor: '#16a34a',
   },
   {
     type: 'whatsapp',
     label: 'WhatsApp Chat',
-    badge: 'High Conversion',
-    description: 'Direct 1-click WhatsApp customer support and sales chat',
+    badge: '1-Click Direct',
+    description: 'Direct 1-click WhatsApp customer support and sales conversation',
     icon: MessageSquare,
     defaultColor: '#25D366',
   },
@@ -56,7 +61,7 @@ const PURPOSES: PurposeOption[] = [
     type: 'review',
     label: 'Google Review',
     badge: 'Build Trust',
-    description: 'Collect 5-star Google Business ratings from satisfied customers',
+    description: 'Direct link to collect 5-star Google Business ratings from satisfied customers',
     icon: Star,
     defaultColor: '#d97706',
   },
@@ -64,23 +69,23 @@ const PURPOSES: PurposeOption[] = [
     type: 'menu',
     label: 'Digital Menu',
     badge: 'F&B Favorite',
-    description: 'Contactless food, drinks, and specials menu for restaurants & cafes',
+    description: 'Direct link to contactless food, drinks, and specials menu',
     icon: Utensils,
     defaultColor: '#ea580c',
   },
   {
     type: 'website',
     label: 'Website Link',
-    badge: 'Mobile Handoff',
-    description: 'Seamlessly hand off desktop visitors to mobile browsing or apps',
+    badge: '1-Click Direct',
+    description: 'Direct 1-click navigation to your website URL or portal',
     icon: Globe,
     defaultColor: '#2563eb',
   },
   {
     type: 'custom',
     label: 'Custom QR',
-    badge: 'Flexible',
-    description: 'Any custom URL, contact card, Wi-Fi, or direct business payload',
+    badge: 'Scannable QR',
+    description: 'Custom scannable QR code modal for any business action or payload',
     icon: QrCode,
     defaultColor: '#0f172a',
   },
@@ -184,7 +189,11 @@ export const WebsiteWidgetBuilder: React.FC = () => {
   }, [effectiveConfig.payload, isModalOpen]);
 
   // Generate embed code
-  const currentHost = typeof window !== 'undefined' ? window.location.origin : 'https://quickqr.art';
+  const currentHost = useSyncExternalStore(
+    () => () => {},
+    () => (typeof window !== 'undefined' ? window.location.origin : 'https://quickqr.art'),
+    () => 'https://quickqr.art'
+  );
   const embedCode = generateEmbedCode(effectiveConfig, currentHost);
 
   const handleCopyCode = async () => {
@@ -415,6 +424,10 @@ export const WebsiteWidgetBuilder: React.FC = () => {
                         className="w-full text-xs px-3 py-2 rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
                       />
                     </div>
+
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+                      <span className="font-bold">⚡ 1-Click Direct Chat:</span> Clicking the floating WhatsApp button launches the WhatsApp conversation immediately without requiring visitors to scan a scannable QR code.
+                    </div>
                   </div>
                 )}
 
@@ -436,6 +449,77 @@ export const WebsiteWidgetBuilder: React.FC = () => {
                         Must be a valid https link (e.g. Google Maps review link, digital PDF menu, landing page).
                       </span>
                     </div>
+
+                    {/* Website Link Navigation Target */}
+                    {config.type === 'website' && (
+                      <div className="space-y-2">
+                        <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800">
+                          <span className="font-bold">⚡ 1-Click Direct Link:</span> Clicking the floating widget navigates visitors straight to your configured URL without a QR modal.
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                            Link Navigation Target
+                          </label>
+                          <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl text-xs font-medium">
+                            <button
+                              type="button"
+                              onClick={() => setConfig({ ...config, openInNewTab: true, target: '_blank' })}
+                              className={`py-1.5 rounded-lg transition text-center ${
+                                config.target !== '_self' && config.openInNewTab !== false
+                                  ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                                  : 'text-neutral-500 hover:text-neutral-900'
+                              }`}
+                            >
+                              New Tab (_blank)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfig({ ...config, openInNewTab: false, target: '_self' })}
+                              className={`py-1.5 rounded-lg transition text-center ${
+                                config.target === '_self' || config.openInNewTab === false
+                                  ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                                  : 'text-neutral-500 hover:text-neutral-900'
+                              }`}
+                            >
+                              Same Tab (_self)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Google Review & Menu action mode */}
+                    {(config.type === 'review' || config.type === 'menu') && (
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                          Action Behavior
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 bg-neutral-100 p-1 rounded-xl text-xs font-medium">
+                          <button
+                            type="button"
+                            onClick={() => setConfig({ ...config, clickBehavior: 'direct', showQrModal: false })}
+                            className={`py-1.5 rounded-lg transition text-center ${
+                              config.clickBehavior !== 'modal' && config.clickBehavior !== 'qr' && !config.showQrModal
+                                ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                                : 'text-neutral-500 hover:text-neutral-900'
+                            }`}
+                          >
+                            Direct Link (Default)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfig({ ...config, clickBehavior: 'modal', showQrModal: true })}
+                            className={`py-1.5 rounded-lg transition text-center ${
+                              config.clickBehavior === 'modal' || config.clickBehavior === 'qr' || config.showQrModal
+                                ? 'bg-white text-neutral-900 font-bold shadow-xs'
+                                : 'text-neutral-500 hover:text-neutral-900'
+                            }`}
+                          >
+                            Scannable QR Modal
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -612,9 +696,25 @@ export const WebsiteWidgetBuilder: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900">QR Popup Modal Content</h3>
                   <p className="text-xs text-neutral-500 mt-0.5">
-                    Customize what appears in the modal when a visitor clicks your floating button.
+                    Customize what appears in the modal when a visitor clicks your floating button or scans.
                   </p>
                 </div>
+
+                {getWidgetClickBehavior(effectiveConfig) === 'direct' ? (
+                  <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-600 space-y-1">
+                    <p className="font-semibold text-neutral-900">⚡ Direct 1-Click Action Active</p>
+                    <p className="text-[11px] text-neutral-500">
+                      Visitors clicking your floating button will navigate straight to your destination without seeing a QR modal. The scannable modal below remains available for scannable QR mode or physical display parity.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-600 space-y-1">
+                    <p className="font-semibold text-neutral-900">📱 Scannable QR Modal Active</p>
+                    <p className="text-[11px] text-neutral-500">
+                      Visitors clicking your floating button will see this scannable QR modal.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1">
@@ -782,7 +882,18 @@ export const WebsiteWidgetBuilder: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const behavior = getWidgetClickBehavior(effectiveConfig);
+                      if (behavior === 'direct') {
+                        const { url, target, isSafe } = resolveWidgetDestination(effectiveConfig);
+                        if (isSafe && url) {
+                          safeNavigate(url, target);
+                          return;
+                        }
+                      }
+                      setIsModalOpen(true);
+                    }}
                     className={`inline-flex items-center font-semibold transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${getLauncherClasses()}`}
                     style={{
                       backgroundColor: config.brandColor,

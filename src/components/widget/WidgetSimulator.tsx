@@ -15,6 +15,11 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { WidgetConfig, WidgetType } from '@/lib/widget/types';
+import {
+  getWidgetClickBehavior,
+  resolveWidgetDestination,
+  safeNavigate,
+} from '@/lib/widget/navigation';
 
 interface WidgetSimulatorProps {
   config: WidgetConfig;
@@ -87,6 +92,18 @@ export const WidgetSimulator: React.FC<WidgetSimulatorProps> = ({
 
   const isPaused = status === 'PAUSED';
 
+  const handleLauncherClick = () => {
+    const behavior = getWidgetClickBehavior(config);
+    if (behavior === 'direct') {
+      const resolved = resolveWidgetDestination(config);
+      if (resolved.isSafe && resolved.url) {
+        safeNavigate(resolved.url, resolved.target);
+        return;
+      }
+    }
+    setIsModalOpen(true);
+  };
+
   // Compute button styling classes
   const getRadiusClass = () => {
     switch (config.borderRadius) {
@@ -142,7 +159,11 @@ export const WidgetSimulator: React.FC<WidgetSimulatorProps> = ({
           />
           <span>{isPaused ? 'Widget Paused' : 'Live Interactive Preview'}</span>
           <span className="text-[11px] font-normal text-neutral-500 hidden sm:inline">
-            {isPaused ? '(Hidden from visitors)' : '(Click button to test modal)'}
+            {isPaused
+              ? '(Hidden from visitors)'
+              : getWidgetClickBehavior(config) === 'direct'
+              ? '(Click button to test direct link)'
+              : '(Click button to test modal)'}
           </span>
         </div>
 
@@ -253,7 +274,7 @@ export const WidgetSimulator: React.FC<WidgetSimulatorProps> = ({
               >
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleLauncherClick}
                   style={{
                     backgroundColor: config.brandColor || '#16a34a',
                     color: config.buttonTextColor || '#FFFFFF',

@@ -5,6 +5,9 @@ export type WidgetBorderRadius = 'full' | 'rounded' | 'square';
 export type WidgetShadow = 'soft' | 'medium' | 'strong' | 'none' | 'subtle' | 'elevated';
 export type WidgetIcon = 'wallet' | 'whatsapp' | 'star' | 'utensils' | 'globe' | 'qrcode' | 'upi' | 'review' | 'menu' | 'website' | 'custom';
 
+export type WidgetClickBehavior = 'auto' | 'direct' | 'modal' | 'qr';
+export type WidgetOpenTarget = '_blank' | '_self';
+
 export interface WidgetConfig {
   type: WidgetType;
   payload: string;
@@ -21,6 +24,10 @@ export interface WidgetConfig {
   ctaText: string;
   mobileBehavior?: 'floating' | 'docked';
   qrDataUrl?: string;
+  clickBehavior?: WidgetClickBehavior;
+  openInNewTab?: boolean;
+  target?: WidgetOpenTarget;
+  showQrModal?: boolean;
   // Backward compatibility aliases
   buttonText?: string;
   modalTitle?: string;

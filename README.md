@@ -55,7 +55,13 @@ It provides both client-side static QR generators (where business data never lea
 - **Date Range Filtering**: Analyze performance across 24 hours, 7 days, 30 days, or custom windows.
 
 ### 4. Remote Website QR Widget
-- **Embeddable JavaScript Bundle**: Lightweight (`< 20 KB`), zero-dependency floating QR widget for merchant websites (`widget.js`).
+- **Embeddable JavaScript Bundle**: Lightweight (`< 20 KB`), zero-dependency floating widget for merchant websites (`widget.js`).
+- **Direct 1-Click Action & QR Modal Support**:
+  - **WhatsApp Chat**: Clicking the floating WhatsApp widget opens conversation directly (`wa.me` URLs or deep links) with configured phone number and prefilled message without requiring a scannable QR modal.
+  - **Website Link**: Directly navigates to destination URLs (supports new tab `_blank` with `noopener noreferrer` or same tab `_self`).
+  - **UPI / Payment**: Preserves scan-to-pay QR modal dialog for zero-fee bank payments.
+  - **Custom QR**: Preserves scannable QR modal for explicit QR use cases.
+  - **Google Review & Digital Menu**: Direct 1-click navigation by default, with optional scannable QR modal configuration.
 - **Two Operating Modes**:
   - **Remote Managed Mode**: Embed with a permanent `publicId`. Update colors, titles, logos, and target URLs remotely from the QuickQR dashboard without altering merchant website code.
   - **Static Embedded Mode**: Self-contained client configuration via HTML `data-*` attributes.

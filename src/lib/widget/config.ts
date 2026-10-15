@@ -28,6 +28,10 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         ctaText: 'Zero Surcharge • Direct Bank Payment',
         helperText: 'Zero Surcharge • Direct Bank Payment',
         mobileBehavior: 'floating',
+        clickBehavior: 'modal',
+        showQrModal: true,
+        openInNewTab: true,
+        target: '_blank',
       };
 
     case 'whatsapp':
@@ -50,6 +54,10 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         ctaText: 'Typical reply: within a few minutes',
         helperText: 'Typical reply: within a few minutes',
         mobileBehavior: 'floating',
+        clickBehavior: 'direct',
+        showQrModal: false,
+        openInNewTab: true,
+        target: '_blank',
       };
 
     case 'review':
@@ -72,6 +80,10 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         ctaText: 'Verified Google Business Profile',
         helperText: 'Verified Google Business Profile',
         mobileBehavior: 'floating',
+        clickBehavior: 'direct',
+        showQrModal: false,
+        openInNewTab: true,
+        target: '_blank',
       };
 
     case 'menu':
@@ -94,14 +106,18 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         ctaText: 'Updated daily • Fresh preparations',
         helperText: 'Updated daily • Fresh preparations',
         mobileBehavior: 'floating',
+        clickBehavior: 'direct',
+        showQrModal: false,
+        openInNewTab: true,
+        target: '_blank',
       };
 
     case 'website':
       return {
         type: 'website',
         payload: 'https://quickqr.art',
-        buttonLabel: 'Open on Mobile',
-        buttonText: 'Open on Mobile',
+        buttonLabel: 'Visit Website',
+        buttonText: 'Visit Website',
         buttonIcon: 'website',
         brandColor: '#2563eb', // Blue
         buttonTextColor: '#FFFFFF',
@@ -109,13 +125,17 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         size: 'medium',
         borderRadius: 'full',
         shadow: 'medium',
-        popupTitle: 'Open on Your Smartphone',
-        modalTitle: 'Open on Your Smartphone',
-        popupDescription: 'Scan this QR code to quickly transfer your session or link to your mobile device.',
-        modalDescription: 'Scan this QR code to quickly transfer your session or link to your mobile device.',
-        ctaText: 'Seamless mobile browsing',
-        helperText: 'Seamless mobile browsing',
+        popupTitle: 'Visit Our Website',
+        modalTitle: 'Visit Our Website',
+        popupDescription: 'Click or scan to navigate directly to our website.',
+        modalDescription: 'Click or scan to navigate directly to our website.',
+        ctaText: 'Open website',
+        helperText: 'Open website',
         mobileBehavior: 'floating',
+        clickBehavior: 'direct',
+        showQrModal: false,
+        openInNewTab: true,
+        target: '_blank',
       };
 
     case 'custom':
@@ -139,6 +159,10 @@ export function getDefaultWidgetConfig(type: WidgetType): WidgetConfig {
         ctaText: 'Direct instant access',
         helperText: 'Direct instant access',
         mobileBehavior: 'floating',
+        clickBehavior: 'modal',
+        showQrModal: true,
+        openInNewTab: true,
+        target: '_blank',
       };
   }
 }
@@ -165,7 +189,10 @@ export function validateWidgetConfig(config: Partial<WidgetConfig>): WidgetValid
     if (
       raw.startsWith('javascript:') ||
       raw.startsWith('vbscript:') ||
-      raw.startsWith('data:text/html') ||
+      raw.startsWith('data:') ||
+      raw.startsWith('file:') ||
+      raw.startsWith('blob:') ||
+      raw.startsWith('about:') ||
       raw.includes('<script') ||
       raw.includes('onload=') ||
       raw.includes('onerror=')
@@ -195,6 +222,16 @@ export function validateWidgetConfig(config: Partial<WidgetConfig>): WidgetValid
   const validRadii = ['full', 'rounded', 'square'];
   if (config.borderRadius && !validRadii.includes(config.borderRadius)) {
     errors.push(`Invalid border radius: ${config.borderRadius}`);
+  }
+
+  const validBehaviors = ['auto', 'direct', 'modal', 'qr'];
+  if (config.clickBehavior && !validBehaviors.includes(config.clickBehavior)) {
+    errors.push(`Invalid click behavior: ${config.clickBehavior}`);
+  }
+
+  const validTargets = ['_blank', '_self'];
+  if (config.target && !validTargets.includes(config.target)) {
+    errors.push(`Invalid open target: ${config.target}`);
   }
 
   return {
@@ -234,7 +271,10 @@ export function sanitizeWidgetConfig(config: Partial<WidgetConfig>): WidgetConfi
   if (
     lowerPayload.startsWith('javascript:') ||
     lowerPayload.startsWith('vbscript:') ||
-    lowerPayload.startsWith('data:text/html') ||
+    lowerPayload.startsWith('data:') ||
+    lowerPayload.startsWith('file:') ||
+    lowerPayload.startsWith('blob:') ||
+    lowerPayload.startsWith('about:') ||
     lowerPayload.includes('<script') ||
     lowerPayload.includes('onerror=') ||
     lowerPayload.includes('onload=')
@@ -267,6 +307,22 @@ export function sanitizeWidgetConfig(config: Partial<WidgetConfig>): WidgetConfi
     ? config.shadow
     : fallback.shadow) as WidgetConfig['shadow'];
 
+  const clickBehavior = (['auto', 'direct', 'modal', 'qr'].includes(config.clickBehavior as string)
+    ? config.clickBehavior
+    : fallback.clickBehavior) as WidgetConfig['clickBehavior'];
+
+  const target = (['_blank', '_self'].includes(config.target as string)
+    ? config.target
+    : (config.openInNewTab === false ? '_self' : (fallback.target || '_blank'))) as WidgetConfig['target'];
+
+  const openInNewTab = config.openInNewTab !== undefined
+    ? Boolean(config.openInNewTab)
+    : (target === '_self' ? false : (fallback.openInNewTab !== undefined ? fallback.openInNewTab : true));
+
+  const showQrModal = config.showQrModal !== undefined
+    ? Boolean(config.showQrModal)
+    : (clickBehavior === 'modal' || clickBehavior === 'qr' ? true : (clickBehavior === 'direct' ? false : fallback.showQrModal));
+
   return {
     type,
     payload: rawPayload,
@@ -287,6 +343,10 @@ export function sanitizeWidgetConfig(config: Partial<WidgetConfig>): WidgetConfi
     helperText: ctaText,
     mobileBehavior: config.mobileBehavior || 'floating',
     qrDataUrl: config.qrDataUrl,
+    clickBehavior,
+    openInNewTab,
+    target,
+    showQrModal,
   };
 }
 
@@ -331,12 +391,14 @@ export function decodeWidgetConfig(encoded: string): WidgetConfig | null {
 export function generateEmbedCode(config: WidgetConfig, host = 'https://quickqr.art'): string {
   const encoded = encodeWidgetConfig(config);
   const cleanLabel = (config.buttonLabel || 'Scan QR').replace(/"/g, '&quot;');
+  const behaviorAttr = config.clickBehavior && config.clickBehavior !== 'auto' ? `\n  data-behavior="${config.clickBehavior}"` : '';
+  const targetAttr = config.target ? `\n  data-target="${config.target}"` : '';
   return `<!-- QuickQR Website QR Widget -->
 <script
   src="${host}/widget.js"
   data-type="${config.type}"
   data-label="${cleanLabel}"
-  data-color="${config.brandColor}"
+  data-color="${config.brandColor}"${behaviorAttr}${targetAttr}
   data-config="${encoded}"
   async
 ></script>`;
